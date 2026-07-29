@@ -1,0 +1,31 @@
+resourceId,type,homeLocation,capacity,availabilityStatus
+RES001,Advanced Life Support Ambulance,LOC050,2,Available
+RES002,Basic Life Support Ambulance,LOC050,2,Available
+RES003,Neonatal Transport Ambulance,LOC050,1,Maintenance
+RES004,Rapid Response Vehicle,LOC007,1,Available
+RES005,Mobile X-Ray Machine A,LOC010,1,In_Use
+RES006,Mobile X-Ray Machine B,LOC010,1,Available
+RES007,Portable Ultrasound,LOC013,1,Available
+RES008,Emergency Defibrillator 1,LOC006,1,Available
+RES009,Emergency Defibrillator 2,LOC005,1,Available
+RES010,Crash Cart - A&E,LOC006,1,Available
+RES011,Crash Cart - ICU,LOC021,1,Available
+RES012,Ventilator - Adult A,LOC021,1,In_Use
+RES013,Ventilator - Adult B,LOC021,1,Available
+RES014,Ventilator - Paediatric,LOC029,1,In_Use
+RES015,Transport Incubator,LOC030,1,Available
+RES016,Dialysis Machine 1,LOC038,1,In_Use
+RES017,Dialysis Machine 2,LOC038,1,Available
+RES018,Surgical Robot Arm,LOC023,1,Maintenance
+RES019,Anaesthesia Machine A,LOC023,1,Available
+RES020,Anaesthesia Machine B,LOC024,1,Available
+RES021,Blood Transport Cooler,LOC041,5,Available
+RES022,On-Call General Surgeon,LOC023,1,In_Use
+RES023,On-Call Cardiologist,LOC032,1,Available
+RES024,On-Call Paediatrician,LOC027,1,Available
+RES025,Triage Nurse Lead,LOC005,1,Available
+RES026,ICU Charge Nurse,LOC021,1,Available
+RES027,Porter Team Alpha,LOC002,3,In_Use
+RES028,Porter Team Beta,LOC006,3,Available
+RES029,CSSD Sterilization Cart,LOC042,10,Available
+RES030,Emergency Oxygen Cylinder Batch,LOC041,20,Available

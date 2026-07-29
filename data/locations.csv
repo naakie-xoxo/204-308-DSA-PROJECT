@@ -1,0 +1,51 @@
+locationId,name,area,type,xCoordinate,yCoordinate
+LOC001,Main Gate & Security,Access Points,Entrance,0,0
+LOC002,UGMC Main Reception,Block A,Administration,50,0
+LOC003,Outpatient Department (OPD),Block A,Clinic,60,10
+LOC004,Main Pharmacy,Block A,Dispensary,55,15
+LOC005,Triage Area,Block A,Emergency,70,0
+LOC006,Accident & Emergency (A&E),Block A,Emergency,80,5
+LOC007,Ambulance Bay,Block A,Emergency,90,5
+LOC008,Medical Training & Simulation Centre,MTSC Block,Education,30,-50
+LOC009,MTSC Auditorium,MTSC Block,Education,35,-55
+LOC010,Imaging & Radiology,Block B,Diagnostic,100,40
+LOC011,MRI Suite,Block B,Diagnostic,105,45
+LOC012,CT Scan Room,Block B,Diagnostic,110,40
+LOC013,X-Ray & Ultrasound,Block B,Diagnostic,95,45
+LOC014,Central Laboratory,Block B,Diagnostic,100,60
+LOC015,Phlebotomy (Blood Draw),Block B,Diagnostic,95,65
+LOC016,Pathology & Morgue,Support Annex,Facility,150,100
+LOC017,VIP/VVIP Ward,Block F,Ward,200,-20
+LOC018,Presidential Suite,Block F,Ward,210,-20
+LOC019,General Inpatient Ward - Male,Block C,Ward,150,20
+LOC020,General Inpatient Ward - Female,Block C,Ward,150,40
+LOC021,Intensive Care Unit (ICU),Block C,Critical,170,30
+LOC022,High Dependency Unit (HDU),Block C,Critical,175,30
+LOC023,Main Operating Theatres,Block C,Surgery,180,40
+LOC024,Day Surgery Unit,Block C,Surgery,185,35
+LOC025,Post-Anesthesia Care Unit (PACU),Block C,Recovery,180,45
+LOC026,Women and Childrens Centre,Block D,Clinic,120,-50
+LOC027,Paediatric Outpatient,Block D,Clinic,125,-55
+LOC028,Paediatric Inpatient Ward,Block D,Ward,130,-60
+LOC029,Neonatal Intensive Care Unit (NICU),Block D,Critical,140,-65
+LOC030,Delivery Suites,Block D,Maternity,145,-50
+LOC031,Maternity Ward,Block D,Ward,150,-55
+LOC032,Cardiovascular Centre,Specialist Block,Clinic,80,80
+LOC033,Cath Lab,Specialist Block,Surgery,85,85
+LOC034,Dental Clinic,Block A,Clinic,65,20
+LOC035,Ear Nose and Throat (ENT),Block A,Clinic,70,25
+LOC036,Eye Clinic (Ophthalmology),Block A,Clinic,75,30
+LOC037,Physiotherapy & Rehab,Wellness Centre,Therapy,20,40
+LOC038,Dialysis Centre,Specialist Block,Clinic,90,90
+LOC039,Gastroenterology & Endoscopy,Specialist Block,Clinic,95,85
+LOC040,Dietetics & Nutrition,Wellness Centre,Clinic,25,45
+LOC041,UGMC Blood Bank,Block B,Facility,115,60
+LOC042,Central Sterile Services Dept (CSSD),Block C,Support,190,50
+LOC043,UGMC Staff Cafeteria,Support Annex,Facility,-20,30
+LOC044,Human Resources Office,Administration,Office,40,-10
+LOC045,Accounts & Billing,Administration,Office,45,-10
+LOC046,IT Server Room,Administration,Support,50,-15
+LOC047,Medical Records,Administration,Office,55,-20
+LOC048,Laundry Services,Support Annex,Facility,-30,40
+LOC049,Maintenance & Engineering,Support Annex,Facility,-40,50
+LOC050,Ambulance Dispatch,Emergency Hub,Transit,250,100
