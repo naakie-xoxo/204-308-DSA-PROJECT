@@ -1,0 +1,25 @@
+# Java / Maven build output
+target/
+build/
+out/
+*.class
+
+# Generated local databases and SQLite side files
+hospital_system.db
+hospital_system.db-shm
+hospital_system.db-wal
+*.db-journal
+
+# IDE- and operating-system-local files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.DS_Store
+Thumbs.db
+
+# Local experiment output; keep the results folder guide tracked.
+results/*
+!results/README.md
+*.log

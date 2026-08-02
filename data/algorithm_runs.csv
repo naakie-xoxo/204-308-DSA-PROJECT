@@ -1,4 +1,4 @@
-*/NB THIS IS MOCK DATA UNTIL ACTUAL ALGORITHMS ARE MADE*/ runId,algorithmName,inputSize,timeNs,memoryKb,dateRun
+runId,algorithmName,inputSize,timeNs,memoryKb,dateRun
 1,QuickSort,50,15400,1024,2026-04-10
 2,QuickSort,100,32100,1280,2026-04-10
 3,QuickSort,200,68500,1536,2026-04-10
