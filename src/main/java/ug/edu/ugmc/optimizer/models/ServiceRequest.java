@@ -2,13 +2,13 @@ package ug.edu.ugmc.optimizer.models;
 
 public class ServiceRequest {
     private String id;
-    private int priority;
+    private int urgency; 
     
-    public ServiceRequest(String id, int priority) {
+    public ServiceRequest(String id, int urgency) {
         this.id = id;
-        this.priority = priority;
+        this.urgency = urgency;
     }
     
     public String getId() { return id; }
-    public int getPriority() { return priority; }
+    public int getUrgency() { return urgency; } 
 }
