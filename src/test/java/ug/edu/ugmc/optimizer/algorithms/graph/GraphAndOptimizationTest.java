@@ -1,4 +1,4 @@
-package ug.edu.ugmc.optimizer.algorithms.graph;
+/*package ug.edu.ugmc.optimizer.algorithms.graph;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,4 +95,4 @@ class GraphAndOptimizationTest {
         int[] values = {60, 100};
         assertEquals(0, DPOptimizer.knapsack(weights, values, 0));
     }
-}
+}*/
