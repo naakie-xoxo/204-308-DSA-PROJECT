@@ -42,13 +42,17 @@ public class BTree<K extends Comparable<K>, V> {
      * parameter. The brief requires structural constants to be derived from team index
      * numbers rather than chosen arbitrarily.
      */
-    private static final int SOMUAH_INDEX = 22018389;
+    private static final int STUDENT_INDEX = 22018389;
 
     /**
      * Minimum degree t, derived as (22018389 % 4) + 3 = 4 per the assigned parameter mapping.
      * Every node therefore holds 3 to 7 keys and an internal node has 4 to 8 children.
+     *
+     * <p>Named for what it is rather than the template's generic "MAX_CAPACITY": t is the
+     * <em>minimum</em> degree, so it is not the largest anything. The maximum a node holds is
+     * {@link #MAX_KEYS} = 2t-1 = 7, derived below.
      */
-    public static final int MIN_DEGREE = (SOMUAH_INDEX % 4) + 3;
+    public static final int MIN_DEGREE = (STUDENT_INDEX % 4) + 3;
 
     /** Maximum keys per node, 2t-1 = 7. A node reaching this count must split before reuse. */
     public static final int MAX_KEYS = (2 * MIN_DEGREE) - 1;
