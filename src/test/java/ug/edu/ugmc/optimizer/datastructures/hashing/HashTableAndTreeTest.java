@@ -2,7 +2,7 @@ package ug.edu.ugmc.optimizer.datastructures.hashing;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
-
+import ug.edu.ugmc.optimizer.datastructures.trees.BinarySearchTree;
 class HashTableTest {
 
     // Test 19: Normal - Put and Get
@@ -16,12 +16,17 @@ class HashTableTest {
     // Test 20: Boundary - Hash Collision Handling
     @Test
     void testHashCollision() {
-        // Force a collision if map uses simple modulus
-        CustomHashTable<Integer, String> table = new CustomHashTable<>(5);
+        // Using the default constructor which enforces Precious's capacity parameter
+        CustomHashTable<Integer, String> table = new CustomHashTable<>();
+        
+        // We will insert multiple items to ensure the linked list chaining works
         table.put(1, "A");
-        table.put(6, "B"); // Collides with 1 if size is 5
+        table.put(75, "B"); // Highly likely to collide or chain cleanly
+        table.put(149, "C"); 
+        
         assertEquals("A", table.get(1));
-        assertEquals("B", table.get(6));
+        assertEquals("B", table.get(75));
+        assertEquals("C", table.get(149));
     }
 
     // Test 21: Invalid - Missing Key
