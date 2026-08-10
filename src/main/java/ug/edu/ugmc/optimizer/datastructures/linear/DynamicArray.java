@@ -57,15 +57,16 @@ public class DynamicArray <T>{
 
     // resize method to increase the capacity of the dynamic array
     private void resize() {
-        capacity += ((22027250 % 50) + 10 );
+        capacity += ((22027250 % 50) + 10);
         T[] newArray = (T[]) new Object[capacity];
         
+        // Copy all existing elements into the new array
         for (int i = 0; i < size; i++) {
             newArray[i] = array[i];
+        } 
         
-        
-            array = newArray;
-     }   
+        // Reassign the array reference AFTER the copy loop finishes
+        array = newArray;
     }
 
     
