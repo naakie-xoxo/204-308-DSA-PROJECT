@@ -1,7 +1,6 @@
 package ug.edu.ugmc.optimizer.algorithms.sort;
 
 import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
-import ug.edu.ugmc.optimizer.models.ServiceRequest;
 
 public class QuickSort {
 
@@ -10,19 +9,18 @@ public class QuickSort {
     private static final int SUBARRAY_CUTOFF = (STUDENT_INDEX % 10) + 5; // Evaluates to 12
 
     /**
-     *  Sorting service requests by urgency score using QuickSort.
-     * Higher urgency (5) comes before lower urgency (1).
+     *  Sorting elements using QuickSort in ascending order[cite: 1].
      *
-     * @param requests Custom DynamicArray containing ServiceRequest objects
+     * @param requests Custom DynamicArray containing Integer objects[cite: 1]
      */
-    public static void sort(DynamicArray requests) {
+    public static void sort(DynamicArray<Integer> requests) {
         if (requests == null || requests.size() <= 1) {
             return;
         }
         quickSort(requests, 0, requests.size() - 1);
     }
 
-    private static void quickSort(DynamicArray requests, int low, int high) {
+    private static void quickSort(DynamicArray<Integer> requests, int low, int high) {
         // Optimization: Use Insertion Sort for sub-arrays smaller than or equal to cutoff
         if (high - low + 1 <= SUBARRAY_CUTOFF) {
             insertionSort(requests, low, high);
@@ -36,15 +34,15 @@ public class QuickSort {
         }
     }
 
-    private static int partition(DynamicArray requests, int low, int high) {
-        // Pick the rightmost element as  the pivot
-        ServiceRequest pivot = (ServiceRequest) requests.get(high);
+    private static int partition(DynamicArray<Integer> requests, int low, int high) {
+        // Pick the rightmost element as the pivot
+        Integer pivot = requests.get(high);
         int i = low - 1;
 
         for (int j = low; j < high; j++) {
-            ServiceRequest current = (ServiceRequest) requests.get(j);
-            // Sorting by descending urgency
-            if (current.getUrgency() >= pivot.getUrgency()) {
+            Integer current = requests.get(j);
+            // Sorting by ascending order[cite: 1]
+            if (current <= pivot) {
                 i++;
                 swap(requests, i, j);
             }
@@ -53,18 +51,18 @@ public class QuickSort {
         return i + 1;
     }
 
-    private static void swap(DynamicArray requests, int i, int j) {
-        Object temp = requests.get(i);
+    private static void swap(DynamicArray<Integer> requests, int i, int j) {
+        Integer temp = requests.get(i);
         requests.set(i, requests.get(j));
         requests.set(j, temp);
     }
 
-    private static void insertionSort(DynamicArray requests, int left, int right) {
+    private static void insertionSort(DynamicArray<Integer> requests, int left, int right) {
         for (int i = left + 1; i <= right; i++) {
-            ServiceRequest key = (ServiceRequest) requests.get(i);
+            Integer key = requests.get(i);
             int j = i - 1;
 
-            while (j >= left && ((ServiceRequest) requests.get(j)).getUrgency() < key.getUrgency()) {
+            while (j >= left && requests.get(j) > key) {
                 requests.set(j + 1, requests.get(j));
                 j--;
             }
