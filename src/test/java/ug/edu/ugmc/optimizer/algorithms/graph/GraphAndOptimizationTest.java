@@ -1,5 +1,6 @@
 package ug.edu.ugmc.optimizer.algorithms.graph;
-
+import ug.edu.ugmc.optimizer.graph.CustomGraph;
+import ug.edu.ugmc.optimizer.datastructures.disjointset.DisjointSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ug.edu.ugmc.optimizer.algorithms.optimization.GreedyOptimizer;
@@ -11,7 +12,7 @@ class GraphAndOptimizationTest {
 
     @BeforeEach
     void setUp() {
-        graph = new CustomGraph();
+        graph = new CustomGraph(100);
         graph.addNode("ER"); graph.addNode("Ward A"); graph.addNode("ICU");
         graph.addEdge("ER", "Ward A", 5);
         graph.addEdge("Ward A", "ICU", 10);

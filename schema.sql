@@ -23,18 +23,23 @@ CREATE TABLE IF NOT EXISTS roads (
     FOREIGN KEY (toLocationId) REFERENCES locations(locationId)
 );
 
+DROP TABLE IF EXISTS service_requests;
+
 CREATE TABLE IF NOT EXISTS service_requests (
-    requestId TEXT PRIMARY KEY,
-    sourceId TEXT NOT NULL,
-    destinationId TEXT NOT NULL,
+    request_id TEXT PRIMARY KEY,
+    patient_name TEXT NOT NULL,
+    source_id TEXT NOT NULL,
+    destination_id TEXT NOT NULL,
     category TEXT NOT NULL,
-    urgency INTEGER NOT NULL CHECK (urgency BETWEEN 1 AND 5),
-    timeSubmitted TEXT NOT NULL,
+    urgency_level INTEGER NOT NULL CHECK (urgency_level BETWEEN 1 AND 5),
+    weight INTEGER NOT NULL,
+    value INTEGER NOT NULL,
+    time_submitted TEXT NOT NULL,
     deadline TEXT NOT NULL,
     status TEXT NOT NULL,
-    CHECK (sourceId <> destinationId),
-    FOREIGN KEY (sourceId) REFERENCES locations(locationId),
-    FOREIGN KEY (destinationId) REFERENCES locations(locationId)
+    CHECK (source_id <> destination_id),
+    FOREIGN KEY (source_id) REFERENCES locations(location_id),
+    FOREIGN KEY (destination_id) REFERENCES locations(location_id)
 );
 
 CREATE TABLE IF NOT EXISTS resources (
