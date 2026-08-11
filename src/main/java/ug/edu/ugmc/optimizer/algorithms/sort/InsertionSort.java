@@ -1,5 +1,7 @@
 package ug.edu.ugmc.optimizer.algorithms.sort;
 
+import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
+
 /**
  * Insertion Sort implementation for integer arrays.
  * Index 22302749 used as Shift Penalty parameter.
@@ -19,25 +21,25 @@ public class InsertionSort {
      * 
      * @param arr Array of integers to sort
      */
-    public static void sort(int[] arr) {
+    public static void sort(DynamicArray<Integer> arr) {
         comparisons = 0;
         shifts = 0;
-        int n = arr.length;
+        int n = arr.size();
         
         for (int i = 1; i < n; i++) {
-            int key = arr[i];
+            int key = arr.get(i);
             int j = i - 1;
             
-            while (j >= 0 && arr[j] > key) {
+            while (j >= 0 && arr.get(j) > key) {
                 comparisons++;
-                arr[j + 1] = arr[j];
+                arr.set(j + 1, arr.get(j));
                 shifts++;
                 j--;
                 applyShiftPenalty();
             }
             if (j >= 0) comparisons++;
             
-            arr[j + 1] = key;
+            arr.set(j + 1, key);
         }
     }
     
