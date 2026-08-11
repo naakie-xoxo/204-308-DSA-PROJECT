@@ -12,7 +12,7 @@ class GraphAndOptimizationTest {
 
     @BeforeEach
     void setUp() {
-        graph = new CustomGraph();
+        graph = new CustomGraph(100);
         graph.addNode("ER"); graph.addNode("Ward A"); graph.addNode("ICU");
         graph.addEdge("ER", "Ward A", 5);
         graph.addEdge("Ward A", "ICU", 10);

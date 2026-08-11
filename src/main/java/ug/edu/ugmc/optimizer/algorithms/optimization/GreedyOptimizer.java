@@ -85,8 +85,8 @@ public class GreedyOptimizer {
      * Greedy approach to Job Scheduling (Shortest Job First).
      * Hospital Use Case: Minimizing total patient waiting time by treating the fastest cases first.
      */
-    public static int scheduleJobs(int[] processingTimes) {
-        if (processingTimes == null || processingTimes.length == 0) return 0;
+    public static int[] scheduleJobs(int[] processingTimes) { // Changed return type to int[]
+        if (processingTimes == null || processingTimes.length == 0) return new int[0];
         
         // Inline selection sort to arrange times in ascending order
         for (int i = 0; i < processingTimes.length - 1; i++) {
@@ -101,14 +101,7 @@ public class GreedyOptimizer {
             processingTimes[i] = temp;
         }
         
-        int totalWaitingTime = 0;
-        int currentWait = 0;
-        // Calculate cumulative waiting time
-        for (int i = 0; i < processingTimes.length - 1; i++) {
-            currentWait += processingTimes[i];
-            totalWaitingTime += currentWait;
-        }
-        return totalWaitingTime;
+        return processingTimes; 
     }
 
     /**
