@@ -1,5 +1,6 @@
 package ug.edu.ugmc.optimizer.algorithms.graph;
-
+import ug.edu.ugmc.optimizer.graph.CustomGraph;
+import ug.edu.ugmc.optimizer.datastructures.disjointset.DisjointSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ug.edu.ugmc.optimizer.algorithms.optimization.GreedyOptimizer;

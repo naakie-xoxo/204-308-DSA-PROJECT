@@ -80,4 +80,68 @@ public class GreedyOptimizer {
 
         return totalValue;
     }
+
+    /**
+     * Greedy approach to Job Scheduling (Shortest Job First).
+     * Hospital Use Case: Minimizing total patient waiting time by treating the fastest cases first.
+     */
+    public static int scheduleJobs(int[] processingTimes) {
+        if (processingTimes == null || processingTimes.length == 0) return 0;
+        
+        // Inline selection sort to arrange times in ascending order
+        for (int i = 0; i < processingTimes.length - 1; i++) {
+            int minIdx = i;
+            for (int j = i + 1; j < processingTimes.length; j++) {
+                if (processingTimes[j] < processingTimes[minIdx]) {
+                    minIdx = j;
+                }
+            }
+            int temp = processingTimes[minIdx];
+            processingTimes[minIdx] = processingTimes[i];
+            processingTimes[i] = temp;
+        }
+        
+        int totalWaitingTime = 0;
+        int currentWait = 0;
+        // Calculate cumulative waiting time
+        for (int i = 0; i < processingTimes.length - 1; i++) {
+            currentWait += processingTimes[i];
+            totalWaitingTime += currentWait;
+        }
+        return totalWaitingTime;
+    }
+
+    /**
+     * Greedy approach to Coin Change.
+     * Hospital Use Case: Pharmacy billing returning the minimum number of coins/bills.
+     */
+    public static int coinChange(int[] coins, int amount) {
+        if (coins == null || coins.length == 0 || amount <= 0) return 0;
+        
+        // Sort descending (assuming coins might be unsorted)
+        for (int i = 0; i < coins.length - 1; i++) {
+            int maxIdx = i;
+            for (int j = i + 1; j < coins.length; j++) {
+                if (coins[j] > coins[maxIdx]) {
+                    maxIdx = j;
+                }
+            }
+            int temp = coins[maxIdx];
+            coins[maxIdx] = coins[i];
+            coins[i] = temp;
+        }
+        
+        int coinCount = 0;
+        for (int coin : coins) {
+            if (amount == 0) break;
+            if (coin <= amount) {
+                coinCount += (amount / coin);
+                amount = amount % coin;
+            }
+        }
+        
+        // If amount is not 0, it means exact change couldn't be made
+        return amount == 0 ? coinCount : -1;
+    }
+
 }
