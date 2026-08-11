@@ -1,20 +1,17 @@
 package ug.edu.ugmc.optimizer.algorithms.sort;
 
-// Import Group A's custom structure
 import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
 
 public class MergeSort {
 
     private static final int STUDENT_INDEX = 22389307;
-
     private static final int SUBARRAY_CUTOFF = (STUDENT_INDEX % 10) + 5;
 
     /**
-     *  Sorting elements using MergeSort in ascending order[cite: 1].
+     * Sorting elements using MergeSort in ascending order.
      *
-     * @param requests Custom DynamicArray containing Integer objects[cite: 1]
+     * @param requests Custom DynamicArray containing Integer objects
      */
-
     public static void sort(DynamicArray<Integer> requests) {
         if (requests == null || requests.size() <= 1) {
             return;
@@ -23,22 +20,15 @@ public class MergeSort {
     }
 
     private static void mergeSort(DynamicArray<Integer> requests, int left, int right) {
-        // Optimization: Switch to Insertion Sort when sub-array size <= SUBARRAY_CUTOFF (12)
         if (right - left + 1 <= SUBARRAY_CUTOFF) {
             insertionSort(requests, left, right);
             return;
         }
-
-        if (left < right) {
-            int mid = left + (right - left) / 2;
-
-            // Divide
-            mergeSort(requests, left, mid);
-            mergeSort(requests, mid + 1, right);
-
-            // Conquer / Merge
-            merge(requests, left, mid, right);
-        }
+        
+        int mid = left + (right - left) / 2;
+        mergeSort(requests, left, mid);
+        mergeSort(requests, mid + 1, right);
+        merge(requests, left, mid, right);
     }
 
     private static void merge(DynamicArray<Integer> requests, int left, int mid, int right) {
@@ -59,7 +49,6 @@ public class MergeSort {
         int k = left;
 
         while (i < leftSize && j < rightSize) {
-            // Primary sort key comparison in ascending order[cite: 1]
             if (leftArray[i] <= rightArray[j]) {
                 requests.set(k, leftArray[i]);
                 i++;
