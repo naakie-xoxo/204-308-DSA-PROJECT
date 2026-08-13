@@ -11,30 +11,29 @@ import ug.edu.ugmc.optimizer.datastructures.disjointset.DisjointSet;
  */
 public class PathFinder {
 
-    // Universal Parameter assigned to Naakie
-    private static final int EMERGENCY_PENALTY_BASE = 22387455;
-
     /**
      * Executes Dijkstra's Algorithm to find the shortest travel time between two
      * wards.
-     * Integrates Group A's CustomPriorityQueue for O(V + E log V) efficiency.
+     * Integrates the project's custom priority queue for O((V + E) log V)
+     * efficiency.  Edge weights are used exactly as stored in the graph; route
+     * costs must not be changed by algorithm-specific penalties.
      * 
      * @param graph      The hospital network graph.
      * @param startNode  The starting location ID (e.g., "ER").
      * @param targetNode The destination location ID (e.g., "ICU").
-     * @return The minimum total weight (travel time) to reach the target, or -1 if
-     *         unreachable.
+     * @return the minimum total weight (travel time), or {@code -1} when the
+     *         target is unreachable
+     * @throws IllegalArgumentException if the graph or location IDs are invalid,
+     *         or if the graph contains a negative edge
+     * @throws ArithmeticException if a reachable route cannot be represented by
+     *         the method's integer return type
      */
     public static int dijkstra(CustomGraph graph, String startNode, String targetNode) {
+        requireGraph(graph);
+        requireLocationId(startNode, "startNode");
+        requireLocationId(targetNode, "targetNode");
+
         int numNodes = graph.getNumNodes();
-        int[] distances = new int[numNodes];
-        boolean[] visited = new boolean[numNodes];
-
-        // Initialize all distances to "infinity"
-        for (int i = 0; i < numNodes; i++) {
-            distances[i] = Integer.MAX_VALUE;
-        }
-
         int startIndex = graph.getIndex(startNode);
         int targetIndex = graph.getIndex(targetNode);
 
@@ -42,10 +41,18 @@ public class PathFinder {
             throw new IllegalArgumentException("Start or target node does not exist in the graph.");
         }
 
-        // Distance to the starting point is always 0
+        validateDijkstraEdges(graph, numNodes);
+
+        long[] distances = new long[numNodes];
+        boolean[] visited = new boolean[numNodes];
+
+        // Long.MAX_VALUE is a sentinel only; it is never used in arithmetic.
+        for (int i = 0; i < numNodes; i++) {
+            distances[i] = Long.MAX_VALUE;
+        }
+
         distances[startIndex] = 0;
 
-        // Initialize Tawiah Kwaku's Priority Queue
         CustomPriorityQueue pq = new CustomPriorityQueue();
         pq.insert(startNode, 0);
 
@@ -61,28 +68,34 @@ public class PathFinder {
 
             int currentIndex = graph.getIndex(currentNode);
 
-            // Skip if we have already found the absolute shortest path to this node
+            if (currentIndex < 0 || currentIndex >= numNodes) {
+                throw new IllegalStateException("Priority queue contained an unknown graph node.");
+            }
+
+            // Stale entries are expected after a successful relaxation.  The
+            // first extraction for a node is its final shortest distance.
             if (visited[currentIndex]) {
                 continue;
             }
             visited[currentIndex] = true;
 
-            // Early exit if we reached our destination
             if (currentIndex == targetIndex) {
-                return distances[targetIndex];
+                return Math.toIntExact(distances[targetIndex]);
             }
 
-            // Traverse the Adjacency List for the current node
             EdgeNode neighbor = graph.getNeighbors(currentIndex);
             while (neighbor != null) {
                 int neighborIndex = neighbor.destinationIndex;
 
-                if (!visited[neighborIndex]) {
-                    // Apply Naakie's congestion penalty derived from the universal parameter
-                    int congestionPenalty = (EMERGENCY_PENALTY_BASE % 3);
-                    int newDist = distances[currentIndex] + neighbor.weight + congestionPenalty;
+                if (neighborIndex < 0 || neighborIndex >= numNodes) {
+                    throw new IllegalStateException("Graph contains an invalid edge destination.");
+                }
 
-                    // Relaxation step
+                if (!visited[neighborIndex]) {
+                    // Negative weights are rejected before the search.  Exact
+                    // addition prevents a large travel-time sum from wrapping.
+                    long newDist = Math.addExact(distances[currentIndex], neighbor.weight);
+
                     if (newDist < distances[neighborIndex]) {
                         distances[neighborIndex] = newDist;
                         pq.insert(graph.getNodeName(neighborIndex), newDist);
@@ -92,8 +105,29 @@ public class PathFinder {
             }
         }
 
-        // Return -1 if the target node is completely isolated/unreachable
         return -1;
+    }
+
+    private static void validateDijkstraEdges(CustomGraph graph, int numNodes) {
+        for (int source = 0; source < numNodes; source++) {
+            EdgeNode edge = graph.getNeighbors(source);
+            while (edge != null) {
+                if (edge.destinationIndex < 0 || edge.destinationIndex >= numNodes) {
+                    throw new IllegalStateException("Graph contains an invalid edge destination.");
+                }
+                if (edge.weight < 0) {
+                    throw new IllegalArgumentException(
+                            "Dijkstra requires non-negative edge weights; found " + edge.weight + ".");
+                }
+                edge = edge.next;
+            }
+        }
+    }
+
+    private static void requireLocationId(String locationId, String parameterName) {
+        if (locationId == null || locationId.trim().isEmpty()) {
+            throw new IllegalArgumentException(parameterName + " cannot be null or blank.");
+        }
     }
 
     /**

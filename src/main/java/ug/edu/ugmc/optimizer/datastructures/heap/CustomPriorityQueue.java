@@ -1,31 +1,45 @@
 package ug.edu.ugmc.optimizer.datastructures.heap;
 
+/**
+ * A min-priority queue implemented with a binary heap.
+ *
+ * <p>The queue grows as needed so graph algorithms are not limited by an
+ * arbitrary number of relaxations.  Priorities are stored as {@code long}s to
+ * keep path calculations from wrapping when a large hospital network is
+ * loaded.</p>
+ */
 public class CustomPriorityQueue {
 
     private static class Node {
         String value;
-        int priority;
+        long priority;
 
-        Node(String value, int priority) {
+        Node(String value, long priority) {
             this.value = value;
             this.priority = priority;
         }
     }
 
-    private static final int CAPACITY = 137;
+    private static final int INITIAL_CAPACITY = 16;
     private Node[] heap;
     private int size;
 
     public CustomPriorityQueue() {
-        heap = new Node[CAPACITY];
+        heap = new Node[INITIAL_CAPACITY];
         size = 0;
     }
 
+    /** Inserts a value with an integer priority. */
     public void insert(String value, int priority) {
-        if (size == heap.length) {
-            throw new IllegalStateException("Priority Queue is full");
-        }
+        insert(value, (long) priority);
+    }
 
+    /** Inserts a value with a long priority without narrowing or wrapping it. */
+    public void insert(String value, long priority) {
+        if (value == null) {
+            throw new IllegalArgumentException("Priority queue values cannot be null.");
+        }
+        ensureCapacity();
         heap[size] = new Node(value, priority);
         bubbleUp(size);
         size++;
@@ -55,6 +69,25 @@ public class CustomPriorityQueue {
             swap(index, parent);
             index = parent;
         }
+    }
+
+    private void ensureCapacity() {
+        if (size < heap.length) {
+            return;
+        }
+
+        int newCapacity = heap.length > Integer.MAX_VALUE / 2
+                ? Integer.MAX_VALUE
+                : heap.length * 2;
+        if (newCapacity <= heap.length) {
+            throw new IllegalStateException("Priority Queue capacity exhausted.");
+        }
+
+        Node[] expanded = new Node[newCapacity];
+        for (int i = 0; i < size; i++) {
+            expanded[i] = heap[i];
+        }
+        heap = expanded;
     }
 
     private void sinkDown(int index) {
