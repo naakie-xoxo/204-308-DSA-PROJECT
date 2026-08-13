@@ -1,218 +1,251 @@
 package ug.edu.ugmc.optimizer.algorithms.graph;
 
+import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
 import ug.edu.ugmc.optimizer.datastructures.queues.CustomQueue;
 import ug.edu.ugmc.optimizer.datastructures.queues.CustomStack;
 import ug.edu.ugmc.optimizer.graph.CustomGraph;
 import ug.edu.ugmc.optimizer.graph.CustomGraph.EdgeNode;
 
 /**
- * Graph traversal engine for the UGMC Optimizer.
- * Finds reachable hospital wards (nodes) from a starting location
- * using Breadth-First Search and Depth-First Search.
- *
- * Role context: locating all hospital wards reachable from the Emergency Room
- * so dispatch can decide whether a critical patient must travel farther.
- *
- * Universal Parameter: 22394896.
- * MAX_TRAVERSAL_DEPTH is derived as (22394896 % 15) + 5 to guard against
- * infinite recursion in disconnected or cyclic network zones.
+ * Breadth-first and depth-first traversal utilities for the UGMC hospital road
+ * network. All traversal state is held in project-owned data structures or
+ * primitive arrays; no Java collection implementation is used.
  */
-public class GraphTraversal {
+public final class GraphTraversal {
 
-    /** Hard upper bound on traversal depth to bound work on disconnected graphs. */
-    public static final int MAX_TRAVERSAL_DEPTH = (22394896 % 15) + 5; // Evaluates to 6
+    private static final int MAX_TRAVERSAL_DEPTH = (22394896 % 15) + 5;
 
-    /** Marker entry pushed onto the DFS stack so the depth travels with each node. */
-    private static final class DfsFrame {
-        final int nodeIndex;
-        final int depth;
+    private GraphTraversal() {
+        // Utility class.
+    }
 
-        DfsFrame(int nodeIndex, int depth) {
+    /** Carries a node's hop count through the BFS frontier. */
+    private static final class BfsFrame {
+        private final int nodeIndex;
+        private final int depth;
+
+        private BfsFrame(int nodeIndex, int depth) {
             this.nodeIndex = nodeIndex;
             this.depth = depth;
         }
     }
 
     /**
-     * Determines whether {@code targetNode} is reachable from {@code startNode}
-     * using a Breadth-First Search that respects {@link #MAX_TRAVERSAL_DEPTH}.
-     *
-     * BFS expands the graph in rings around the start, so once {@code targetNode}
-     * is dequeued, we know it was reached via the fewest edges — useful for
-     * identifying the closest available ward.
-     *
-     * @param graph       the hospital network graph
-     * @param startNode   ID of the starting ward (e.g., "ER")
-     * @param targetNode  ID of the destination ward
-     * @return true if target is reachable within the depth budget, false otherwise
+     * Keeps one DFS frame per active path level. Advancing {@code nextNeighbor}
+     * before pushing a child lets the iterative algorithm backtrack correctly
+     * without placing every sibling on the stack at once.
      */
-    public static boolean bfsReachability(CustomGraph graph, String startNode, String targetNode) {
-        int startIndex = validateAndResolve(graph, startNode, targetNode);
-        int targetIndex = graph.getIndex(targetNode);
+    private static final class DfsFrame {
+        private final int nodeIndex;
+        private final int depth;
+        private EdgeNode nextNeighbor;
 
-        if (startIndex == targetIndex) {
-            return true;
+        private DfsFrame(int nodeIndex, int depth, EdgeNode nextNeighbor) {
+            this.nodeIndex = nodeIndex;
+            this.depth = depth;
+            this.nextNeighbor = nextNeighbor;
+        }
+    }
+
+    /**
+     * Chains the merged fixed-capacity queues so a wide hospital level is not
+     * silently truncated when its frontier contains more than 56 locations.
+     * Every traversal node is still enqueued in a {@link CustomQueue}.
+     */
+    private static final class QueueSegment<T> {
+        private final CustomQueue<T> queue = new CustomQueue<>();
+        private QueueSegment<T> next;
+    }
+
+    /** FIFO adapter over one or more project-owned queue segments. */
+    private static final class TraversalQueue<T> {
+        private QueueSegment<T> head;
+        private QueueSegment<T> tail;
+
+        private void enqueue(T item) {
+            if (tail == null) {
+                head = new QueueSegment<>();
+                tail = head;
+            } else if (tail.queue.isFull()) {
+                tail.next = new QueueSegment<>();
+                tail = tail.next;
+            }
+            tail.queue.enqueue(item);
         }
 
-        boolean[] visited = new boolean[graph.getNumNodes()];
-        // Parallel depth array so BFS can also enforce MAX_TRAVERSAL_DEPTH
-        // (BFS has no implicit depth, so we track it explicitly).
-        int[] depth = new int[graph.getNumNodes()];
-        // CustomQueue is the merged FIFO primitive from Group A (capacity 56).
-        CustomQueue<Integer> queue = new CustomQueue<>();
-        queue.enqueue(startIndex);
+        private T dequeue() {
+            if (isEmpty()) {
+                throw new IllegalStateException("Traversal queue is empty.");
+            }
+
+            T item = head.queue.dequeue();
+            if (head.queue.isEmpty()) {
+                head = head.next;
+                if (head == null) {
+                    tail = null;
+                }
+            }
+            return item;
+        }
+
+        private boolean isEmpty() {
+            return head == null;
+        }
+    }
+
+    /**
+     * Traverses reachable hospital locations in breadth-first discovery order.
+     * The starting location has depth {@code 0}; locations at depth
+     * {@link #MAX_TRAVERSAL_DEPTH} are included but are not expanded.
+     *
+     * <p>Time complexity: O(V + E), where V and E are the locations and roads
+     * examined within the depth limit. Space complexity: O(V).</p>
+     *
+     * @param graph UGMC hospital road network
+     * @param startNode ID of the location at which traversal begins
+     * @return location IDs in exact BFS discovery order
+     * @throws IllegalArgumentException if the graph is null or the starting ID
+     *         is null, blank, or absent from the graph
+     */
+    public static DynamicArray<String> bfsTraversal(CustomGraph graph, String startNode) {
+        int startIndex = validateAndResolve(graph, startNode, "startNode");
+        int nodeCount = graph.getNumNodes();
+        boolean[] visited = new boolean[nodeCount];
+        DynamicArray<String> traversalOrder = new DynamicArray<>();
+        TraversalQueue<BfsFrame> frontier = new TraversalQueue<>();
+
         visited[startIndex] = true;
-        depth[startIndex] = 0;
+        traversalOrder.insert(graph.getNodeName(startIndex));
+        frontier.enqueue(new BfsFrame(startIndex, 0));
 
-        while (!queue.isEmpty()) {
-            int current = queue.dequeue();
-
-            // Depth cap: do not expand any node whose depth has already hit the budget.
-            if (depth[current] >= MAX_TRAVERSAL_DEPTH) {
+        while (!frontier.isEmpty()) {
+            BfsFrame current = frontier.dequeue();
+            if (current.depth >= MAX_TRAVERSAL_DEPTH) {
                 continue;
             }
 
-            EdgeNode neighbor = graph.getNeighbors(current);
+            EdgeNode neighbor = graph.getNeighbors(current.nodeIndex);
             while (neighbor != null) {
-                int next = neighbor.destinationIndex;
-                if (!visited[next]) {
-                    visited[next] = true;
-                    depth[next] = depth[current] + 1;
-                    if (next == targetIndex) {
-                        // Even if target is found, honor the depth cap — if it's
-                        // beyond MAX_TRAVERSAL_DEPTH it is not considered reachable.
-                        return depth[next] <= MAX_TRAVERSAL_DEPTH;
-                    }
-                    try {
-                        queue.enqueue(next);
-                    } catch (IllegalStateException overflow) {
-                        // CustomQueue capacity hit — treat as exhausted frontier and halt gracefully.
-                        return false;
-                    }
+                int neighborIndex = requireValidNeighbor(neighbor, nodeCount);
+                if (!visited[neighborIndex]) {
+                    visited[neighborIndex] = true;
+                    traversalOrder.insert(graph.getNodeName(neighborIndex));
+                    frontier.enqueue(new BfsFrame(neighborIndex, current.depth + 1));
                 }
                 neighbor = neighbor.next;
             }
         }
-        return false;
+
+        return traversalOrder;
     }
 
     /**
-     * Determines whether {@code targetNode} is reachable from {@code startNode}
-     * using a Depth-First Search that strictly enforces {@link #MAX_TRAVERSAL_DEPTH}.
+     * Traverses reachable hospital locations in iterative depth-first order.
+     * The explicit {@link CustomStack} contains only the active patrol path, so
+     * its size is bounded by {@code MAX_TRAVERSAL_DEPTH + 1}.
      *
-     * The depth cap protects against runaway recursion in disconnected or cyclic
-     * sub-graphs: once a stack frame reaches the cap, its outgoing edges are
-     * never pushed, so the algorithm always terminates.
+     * <p>Time complexity: O(V + E), where V and E are the locations and roads
+     * examined within the depth limit. Space complexity: O(V).</p>
      *
-     * @param graph       the hospital network graph
-     * @param startNode   ID of the starting ward (e.g., "ER")
-     * @param targetNode  ID of the destination ward
-     * @return true if target is reachable within the depth budget, false otherwise
+     * @param graph UGMC hospital road network
+     * @param startNode ID of the location at which traversal begins
+     * @return location IDs in exact DFS discovery order
+     * @throws IllegalArgumentException if the graph is null or the starting ID
+     *         is null, blank, or absent from the graph
      */
-    public static boolean dfsReachability(CustomGraph graph, String startNode, String targetNode) {
-        int startIndex = validateAndResolve(graph, startNode, targetNode);
-        int targetIndex = graph.getIndex(targetNode);
-
-        if (startIndex == targetIndex) {
-            return true;
-        }
-
-        boolean[] visited = new boolean[graph.getNumNodes()];
-        // CustomStack carries DfsFrame(nodeIndex, depth) so depth travels with each entry.
+    public static DynamicArray<String> dfsTraversal(CustomGraph graph, String startNode) {
+        int startIndex = validateAndResolve(graph, startNode, "startNode");
+        int nodeCount = graph.getNumNodes();
+        boolean[] visited = new boolean[nodeCount];
+        DynamicArray<String> traversalOrder = new DynamicArray<>();
         CustomStack<DfsFrame> stack = new CustomStack<>();
-        stack.push(new DfsFrame(startIndex, 0));
+
         visited[startIndex] = true;
+        traversalOrder.insert(graph.getNodeName(startIndex));
+        stack.push(new DfsFrame(startIndex, 0, graph.getNeighbors(startIndex)));
 
         while (!stack.isEmpty()) {
-            DfsFrame frame = stack.pop();
-            int current = frame.nodeIndex;
+            DfsFrame current = stack.peek();
 
-            if (current == targetIndex) {
-                return true;
-            }
-
-            // Depth cap: refuse to expand any node whose depth has already hit the budget.
-            if (frame.depth >= MAX_TRAVERSAL_DEPTH) {
+            if (current.depth >= MAX_TRAVERSAL_DEPTH || current.nextNeighbor == null) {
+                stack.pop();
                 continue;
             }
 
-            EdgeNode neighbor = graph.getNeighbors(current);
-            while (neighbor != null) {
-                int next = neighbor.destinationIndex;
-                if (!visited[next]) {
-                    visited[next] = true;
-                    stack.push(new DfsFrame(next, frame.depth + 1));
-                }
-                neighbor = neighbor.next;
+            EdgeNode neighbor = current.nextNeighbor;
+            current.nextNeighbor = neighbor.next;
+            int neighborIndex = requireValidNeighbor(neighbor, nodeCount);
+
+            if (!visited[neighborIndex]) {
+                visited[neighborIndex] = true;
+                traversalOrder.insert(graph.getNodeName(neighborIndex));
+                stack.push(new DfsFrame(
+                        neighborIndex,
+                        current.depth + 1,
+                        graph.getNeighbors(neighborIndex)));
+            }
+        }
+
+        return traversalOrder;
+    }
+
+    /** Alias retaining the conventional short BFS method name. */
+    public static DynamicArray<String> bfs(CustomGraph graph, String startNode) {
+        return bfsTraversal(graph, startNode);
+    }
+
+    /** Alias retaining the conventional short DFS method name. */
+    public static DynamicArray<String> dfs(CustomGraph graph, String startNode) {
+        return dfsTraversal(graph, startNode);
+    }
+
+    /** Compatibility alias for callers that request all BFS-reachable IDs. */
+    public static DynamicArray<String> reachableNodesBFS(CustomGraph graph, String startNode) {
+        return bfsTraversal(graph, startNode);
+    }
+
+    /** Returns whether the target is reachable by BFS within the depth limit. */
+    public static boolean bfsReachability(CustomGraph graph, String startNode, String targetNode) {
+        validateAndResolve(graph, targetNode, "targetNode");
+        return contains(bfsTraversal(graph, startNode), targetNode);
+    }
+
+    /** Returns whether the target is reachable by DFS within the depth limit. */
+    public static boolean dfsReachability(CustomGraph graph, String startNode, String targetNode) {
+        validateAndResolve(graph, targetNode, "targetNode");
+        return contains(dfsTraversal(graph, startNode), targetNode);
+    }
+
+    private static int validateAndResolve(CustomGraph graph, String nodeId, String parameterName) {
+        if (graph == null) {
+            throw new IllegalArgumentException("Graph cannot be null.");
+        }
+        if (nodeId == null || nodeId.trim().isEmpty()) {
+            throw new IllegalArgumentException(parameterName + " cannot be null or blank.");
+        }
+
+        int nodeIndex = graph.getIndex(nodeId);
+        if (nodeIndex < 0) {
+            throw new IllegalArgumentException(
+                    parameterName + " does not exist in the graph: " + nodeId + ".");
+        }
+        return nodeIndex;
+    }
+
+    private static int requireValidNeighbor(EdgeNode neighbor, int nodeCount) {
+        int neighborIndex = neighbor.destinationIndex;
+        if (neighborIndex < 0 || neighborIndex >= nodeCount) {
+            throw new IllegalStateException("Graph contains an invalid edge destination.");
+        }
+        return neighborIndex;
+    }
+
+    private static boolean contains(DynamicArray<String> locations, String targetNode) {
+        for (int index = 0; index < locations.size(); index++) {
+            if (locations.get(index).equals(targetNode)) {
+                return true;
             }
         }
         return false;
-    }
-
-    /**
-     * Collects every ward ID reachable from {@code startNode} within
-     * {@link #MAX_TRAVERSAL_DEPTH} using BFS. Returns the set in the order
-     * each node was first discovered (level-order).
-     *
-     * @param graph     the hospital network graph
-     * @param startNode ID of the starting ward (e.g., "ER")
-     * @return list of reachable node IDs in BFS discovery order
-     */
-    public static java.util.List<String> reachableNodesBFS(CustomGraph graph, String startNode) {
-        java.util.List<String> reachable = new java.util.ArrayList<>();
-        int startIndex = graph.getIndex(startNode);
-        if (startIndex == -1) {
-            return reachable;
-        }
-
-        boolean[] visited = new boolean[graph.getNumNodes()];
-        // Track depth per node to enforce the cap. BFS by itself has no implicit
-        // depth, so we maintain a parallel array and skip expanding any node
-        // whose depth would exceed the budget.
-        int[] depth = new int[graph.getNumNodes()];
-
-        CustomQueue<Integer> queue = new CustomQueue<>();
-        queue.enqueue(startIndex);
-        visited[startIndex] = true;
-        depth[startIndex] = 0;
-        reachable.add(graph.getNodeName(startIndex));
-
-        while (!queue.isEmpty()) {
-            int current = queue.dequeue();
-            if (depth[current] >= MAX_TRAVERSAL_DEPTH) {
-                continue;
-            }
-            EdgeNode neighbor = graph.getNeighbors(current);
-            while (neighbor != null) {
-                int next = neighbor.destinationIndex;
-                if (!visited[next]) {
-                    visited[next] = true;
-                    depth[next] = depth[current] + 1;
-                    reachable.add(graph.getNodeName(next));
-                    try {
-                        queue.enqueue(next);
-                    } catch (IllegalStateException overflow) {
-                        return reachable; // graceful halt on bounded queue overflow
-                    }
-                }
-                neighbor = neighbor.next;
-            }
-        }
-        return reachable;
-    }
-
-    /**
-     * Resolves start and target IDs to indices, throwing a clear error
-     * if either is unknown to the graph.
-     */
-    private static int validateAndResolve(CustomGraph graph, String startNode, String targetNode) {
-        int startIndex = graph.getIndex(startNode);
-        int targetIndex = graph.getIndex(targetNode);
-        if (startIndex == -1 || targetIndex == -1) {
-            throw new IllegalArgumentException(
-                "Start or target node does not exist in the graph. start='" + startNode +
-                "', target='" + targetNode + "'.");
-        }
-        return startIndex;
     }
 }
