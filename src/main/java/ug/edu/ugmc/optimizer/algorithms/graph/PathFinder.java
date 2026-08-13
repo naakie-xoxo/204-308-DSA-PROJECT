@@ -96,34 +96,49 @@ public class PathFinder {
         return -1;
     }
 
+    /**
+     * Calculates the minimum spanning-tree cost using Kruskal's algorithm.
+     * The implementation reuses the project's custom {@link DisjointSet} for
+     * cycle detection and primitive arrays for edge storage.
+     *
+     * @param graph weighted undirected hospital graph
+     * @return total MST cost, {@code 0} for an empty graph, or {@code -1} when
+     *         the graph is disconnected
+     * @throws IllegalArgumentException if {@code graph} is null
+     */
     public static int kruskalMSTCost(CustomGraph graph) {
+        requireGraph(graph);
         int n = graph.getNumNodes();
 
         if (n == 0) {
             return 0;
         }
 
-        int maxEdges = n * (n - 1) / 2;
-
-        int[] source = new int[maxEdges];
-        int[] destination = new int[maxEdges];
-        int[] weight = new int[maxEdges];
-
         int edgeCount = 0;
-
         for (int u = 0; u < n; u++) {
             EdgeNode neighbor = graph.getNeighbors(u);
-
             while (neighbor != null) {
-                int v = neighbor.destinationIndex;
-
-                if (u < v) {
-                    source[edgeCount] = u;
-                    destination[edgeCount] = v;
-                    weight[edgeCount] = neighbor.weight;
+                if (u < neighbor.destinationIndex) {
                     edgeCount++;
                 }
+                neighbor = neighbor.next;
+            }
+        }
 
+        int[] source = new int[edgeCount];
+        int[] destination = new int[edgeCount];
+        int[] weight = new int[edgeCount];
+
+        int edgeIndex = 0;
+        for (int u = 0; u < n; u++) {
+            EdgeNode neighbor = graph.getNeighbors(u);
+            while (neighbor != null) {
+                if (u < neighbor.destinationIndex) {
+                    source[edgeIndex] = u;
+                    destination[edgeIndex] = neighbor.destinationIndex;
+                    weight[edgeIndex] = neighbor.weight;
+                    edgeIndex++;
+                }
                 neighbor = neighbor.next;
             }
         }
@@ -178,6 +193,7 @@ public class PathFinder {
      * @return total weight of the MST, or -1 if the graph is disconnected
      */
     public static int primMSTCost(CustomGraph graph) {
+        requireGraph(graph);
         int n = graph.getNumNodes();
 
         if (n == 0) {
@@ -225,13 +241,9 @@ public class PathFinder {
         return totalCost;
     }
 
-    /**
-     * Kruskal's Minimum Spanning Tree algorithm.
-     *
-     * Uses the custom DisjointSet implementation to detect cycles.
-     *
-     * @param graph the weighted graph
-     * @return total weight of the MST, or -1 if the graph is disconnected
-     */
-
+    private static void requireGraph(CustomGraph graph) {
+        if (graph == null) {
+            throw new IllegalArgumentException("Graph cannot be null.");
+        }
+    }
 }
