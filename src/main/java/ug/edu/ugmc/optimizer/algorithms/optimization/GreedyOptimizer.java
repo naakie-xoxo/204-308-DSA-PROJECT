@@ -34,8 +34,29 @@ public class GreedyOptimizer {
      * @return The sub-optimal total value achieved by the greedy heuristic
      */
     public static int greedyKnapsack(int[] weights, int[] values, int capacity) {
-        if (weights == null || values == null || weights.length == 0 || values.length == 0) {
+        if (weights == null || values == null) {
+            throw new IllegalArgumentException("Weights and values cannot be null.");
+        }
+        if (weights.length != values.length) {
+            throw new IllegalArgumentException(
+                    "Weights and values must contain the same number of requests.");
+        }
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Capacity cannot be negative.");
+        }
+        if (weights.length == 0 || capacity == 0) {
             return 0;
+        }
+
+        for (int index = 0; index < weights.length; index++) {
+            if (weights[index] <= 0) {
+                throw new IllegalArgumentException(
+                        "Request weight must be positive at index " + index + ".");
+            }
+            if (values[index] < 0) {
+                throw new IllegalArgumentException(
+                        "Request value cannot be negative at index " + index + ".");
+            }
         }
 
         int n = weights.length;
@@ -45,8 +66,7 @@ public class GreedyOptimizer {
         // Step 1: Calculate Value-to-Weight ratios
         for (int i = 0; i < n; i++) {
             indices[i] = i;
-            // Prevent division by zero if a weight is 0
-            ratios[i] = weights[i] == 0 ? Double.MAX_VALUE : (double) values[i] / weights[i];
+            ratios[i] = (double) values[i] / weights[i];
         }
 
         // Step 2: Sort indices by ratio in descending order (Highest ratio first)
