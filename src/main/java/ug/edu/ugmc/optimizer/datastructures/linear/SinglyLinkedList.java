@@ -69,7 +69,7 @@ public class SinglyLinkedList<T> {
     //remove method to remove an element at a specific index in the linked list
     public void remove(T element) {
         if (head == null) {
-            throw new IllegalArgumentException("List is empty");
+            throw new IllegalStateException("List is empty");
         }
         if (head.data.equals(element)) {
             head = head.next;
