@@ -4,7 +4,7 @@ import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
 
 /**
  * Insertion Sort implementation for integer arrays.
- * Index 22302749 used as Shift Penalty parameter.
+ * Index 22302749 is retained as a weighted-shift reporting parameter.
  * 
  * @author Aham (Dev 11)
  * @version 1.0
@@ -24,6 +24,9 @@ public class InsertionSort {
     public static void sort(DynamicArray<Integer> arr) {
         comparisons = 0;
         shifts = 0;
+        if (arr == null || arr.size() <= 1) {
+            return;
+        }
         int n = arr.size();
         
         for (int i = 1; i < n; i++) {
@@ -35,7 +38,6 @@ public class InsertionSort {
                 arr.set(j + 1, arr.get(j));
                 shifts++;
                 j--;
-                applyShiftPenalty();
             }
             if (j >= 0) comparisons++;
             
@@ -43,17 +45,9 @@ public class InsertionSort {
         }
     }
     
-    /**
-     * Artificial delay derived from index 22302749.
-     */
-    private static void applyShiftPenalty() {
-        for (int i = 0; i < SHIFT_PENALTY / 100; i++) {
-            Math.sqrt(12345.6789);
-        }
-    }
-    
     public static int getComparisons() { return comparisons; }
     public static int getShifts() { return shifts; }
+    public static long getWeightedShiftCost() { return shifts * SHIFT_PENALTY; }
     public static void resetCounters() {
         comparisons = 0;
         shifts = 0;

@@ -3,64 +3,89 @@ package ug.edu.ugmc.optimizer.algorithms.sort;
 import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
 
 public class QuickSort {
-    
-    private static final int STUDENT_INDEX = 22389307; 
-    private static final int SUBARRAY_CUTOFF = (STUDENT_INDEX % 10) + 5; 
+
+    private static final int STUDENT_INDEX = 22389307;
+    private static final int RANDOM_SEED = 22040372;
+    private static final int SUBARRAY_CUTOFF = (STUDENT_INDEX % 10) + 5;
 
     /**
      * Sorting elements using QuickSort in ascending order.
      *
-     * @param requests Custom DynamicArray containing Integer objects
+     * @param values custom DynamicArray containing Integer objects
      */
-    public static void sort(DynamicArray<Integer> requests) {
-        if (requests == null || requests.size() <= 1) {
+    public static void sort(DynamicArray<Integer> values) {
+        if (values == null || values.size() <= 1) {
             return;
         }
-        quickSort(requests, 0, requests.size() - 1);
+        quickSort(values, 0, values.size() - 1, new PivotGenerator(RANDOM_SEED));
     }
 
-    private static void quickSort(DynamicArray<Integer> requests, int low, int high) {
+    private static void quickSort(
+            DynamicArray<Integer> values,
+            int low,
+            int high,
+            PivotGenerator pivots) {
         if (low < high) {
             if (high - low + 1 <= SUBARRAY_CUTOFF) {
-                insertionSort(requests, low, high);
+                insertionSort(values, low, high);
             } else {
-                int pi = partition(requests, low, high);
-                quickSort(requests, low, pi - 1);
-                quickSort(requests, pi + 1, high);
+                int pivotIndex = partition(values, low, high, pivots);
+                quickSort(values, low, pivotIndex - 1, pivots);
+                quickSort(values, pivotIndex + 1, high, pivots);
             }
         }
     }
 
-    private static int partition(DynamicArray<Integer> requests, int low, int high) {
-        Integer pivot = requests.get(high);
+    private static int partition(
+            DynamicArray<Integer> values,
+            int low,
+            int high,
+            PivotGenerator pivots) {
+        int selectedPivot = low + pivots.nextInt(high - low + 1);
+        swap(values, selectedPivot, high);
+        Integer pivot = values.get(high);
         int i = low - 1;
 
         for (int j = low; j < high; j++) {
-            if (requests.get(j) <= pivot) {
+            if (values.get(j) <= pivot) {
                 i++;
-                swap(requests, i, j);
+                swap(values, i, j);
             }
         }
-        swap(requests, i + 1, high);
+        swap(values, i + 1, high);
         return i + 1;
     }
 
-    private static void swap(DynamicArray<Integer> requests, int i, int j) {
-        Integer temp = requests.get(i);
-        requests.set(i, requests.get(j));
-        requests.set(j, temp);
+    private static void swap(DynamicArray<Integer> values, int i, int j) {
+        Integer temp = values.get(i);
+        values.set(i, values.get(j));
+        values.set(j, temp);
     }
 
-    private static void insertionSort(DynamicArray<Integer> requests, int left, int right) {
+    private static void insertionSort(DynamicArray<Integer> values, int left, int right) {
         for (int i = left + 1; i <= right; i++) {
-            Integer key = requests.get(i);
+            Integer key = values.get(i);
             int j = i - 1;
 
-            while (j >= left && requests.get(j) > key) {
-                requests.set(j + 1, requests.get(j));
+            while (j >= left && values.get(j) > key) {
+                values.set(j + 1, values.get(j));
                 j--;
             }
-            requests.set(j + 1, key);
+            values.set(j + 1, key);
+        }
+    }
+
+    /** Small deterministic pseudo-random generator; no library collections are used. */
+    private static final class PivotGenerator {
+        private int state;
+
+        private PivotGenerator(int seed) {
+            state = seed;
+        }
+
+        private int nextInt(int bound) {
+            state = state * 1103515245 + 12345;
+            return (state & Integer.MAX_VALUE) % bound;
         }
     }
 }
