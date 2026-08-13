@@ -1,5 +1,7 @@
 package ug.edu.ugmc.optimizer.algorithms.sort;
 
+import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
+
 /**
  * Selection Sort implementation for integer arrays.
  * Used for testing and sorting demonstrations.
@@ -16,24 +18,24 @@ public class SelectionSort {
      * 
      * @param arr Array of integers to sort
      */
-    public static void sort(int[] arr) {
+    public static void sort(DynamicArray<Integer> arr) {
         comparisons = 0;
         swaps = 0;
-        int n = arr.length;
+        int n = arr.size();
         
         for (int i = 0; i < n - 1; i++) {
             int minIdx = i;
             for (int j = i + 1; j < n; j++) {
                 comparisons++;
-                if (arr[j] < arr[minIdx]) {
+                if (arr.get(j) < arr.get(minIdx)) {
                     minIdx = j;
                 }
             }
             if (minIdx != i) {
                 swaps++;
-                int temp = arr[i];
-                arr[i] = arr[minIdx];
-                arr[minIdx] = temp;
+                Integer temp = arr.get(i);
+                                arr.set(i, arr.get(minIdx));
+                                arr.set(minIdx, temp);
             }
         }
     }
