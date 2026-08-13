@@ -10,8 +10,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
 
 /** Creates and seeds a local SQLite database from the repository's canonical inputs. */
 public final class DatabaseManager {
@@ -83,15 +81,14 @@ public final class DatabaseManager {
     private static void loadLocations(Connection connection, Path csvPath) throws IOException, SQLException {
         String sql = """
                 INSERT INTO locations
-                    (locationId, name, area, type, xCoordinate, yCoordinate)
+                    (location_id, location_name, area, type, x_coordinate, y_coordinate)
                 VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(locationId) DO UPDATE SET
-                    name=excluded.name, area=excluded.area, type=excluded.type,
-                    xCoordinate=excluded.xCoordinate, yCoordinate=excluded.yCoordinate
+                ON CONFLICT(location_id) DO UPDATE SET
+                    location_name=excluded.location_name, area=excluded.area, type=excluded.type,
+                    x_coordinate=excluded.x_coordinate, y_coordinate=excluded.y_coordinate
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (String[] row : readCsv(csvPath,
-                    "locationId,name,area,type,xCoordinate,yCoordinate", 6)) {
+            readCsv(csvPath, "locationId,name,area,type,xCoordinate,yCoordinate", 6, row -> {
                 statement.setString(1, row[0]);
                 statement.setString(2, row[1]);
                 statement.setString(3, row[2]);
@@ -99,7 +96,7 @@ public final class DatabaseManager {
                 statement.setDouble(5, Double.parseDouble(row[4]));
                 statement.setDouble(6, Double.parseDouble(row[5]));
                 statement.addBatch();
-            }
+            });
             statement.executeBatch();
         }
     }
@@ -107,22 +104,22 @@ public final class DatabaseManager {
     private static void loadRoads(Connection connection, Path csvPath) throws IOException, SQLException {
         String sql = """
                 INSERT INTO roads
-                    (fromLocationId, toLocationId, distance, travelTime, roadConditionWeight)
+                    (source_id, destination_id, distance, travel_time, road_condition_weight)
                 VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(fromLocationId, toLocationId) DO UPDATE SET
-                    distance=excluded.distance, travelTime=excluded.travelTime,
-                    roadConditionWeight=excluded.roadConditionWeight
+                ON CONFLICT(source_id, destination_id) DO UPDATE SET
+                    distance=excluded.distance, travel_time=excluded.travel_time,
+                    road_condition_weight=excluded.road_condition_weight
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (String[] row : readCsv(csvPath,
-                    "fromLocationId,toLocationId,distance,travelTime,roadConditionWeight", 5)) {
+            readCsv(csvPath,
+                    "fromLocationId,toLocationId,distance,travelTime,roadConditionWeight", 5, row -> {
                 statement.setString(1, row[0]);
                 statement.setString(2, row[1]);
                 statement.setDouble(3, Double.parseDouble(row[2]));
                 statement.setInt(4, Integer.parseInt(row[3]));
                 statement.setInt(5, Integer.parseInt(row[4]));
                 statement.addBatch();
-            }
+            });
             statement.executeBatch();
         }
     }
@@ -130,22 +127,21 @@ public final class DatabaseManager {
     private static void loadResources(Connection connection, Path csvPath) throws IOException, SQLException {
         String sql = """
                 INSERT INTO resources
-                    (resourceId, type, homeLocation, capacity, availabilityStatus)
+                    (resource_id, type, home_location, capacity, availability_status)
                 VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(resourceId) DO UPDATE SET
-                    type=excluded.type, homeLocation=excluded.homeLocation,
-                    capacity=excluded.capacity, availabilityStatus=excluded.availabilityStatus
+                ON CONFLICT(resource_id) DO UPDATE SET
+                    type=excluded.type, home_location=excluded.home_location,
+                    capacity=excluded.capacity, availability_status=excluded.availability_status
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (String[] row : readCsv(csvPath,
-                    "resourceId,type,homeLocation,capacity,availabilityStatus", 5)) {
+            readCsv(csvPath, "resourceId,type,homeLocation,capacity,availabilityStatus", 5, row -> {
                 statement.setString(1, row[0]);
                 statement.setString(2, row[1]);
                 statement.setString(3, row[2]);
                 statement.setInt(4, Integer.parseInt(row[3]));
                 statement.setString(5, row[4]);
                 statement.addBatch();
-            }
+            });
             statement.executeBatch();
         }
     }
@@ -154,28 +150,33 @@ public final class DatabaseManager {
             throws IOException, SQLException {
         String sql = """
                 INSERT INTO service_requests
-                    (requestId, sourceId, destinationId, category, urgency,
-                     timeSubmitted, deadline, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(requestId) DO UPDATE SET
-                    sourceId=excluded.sourceId, destinationId=excluded.destinationId,
-                    category=excluded.category, urgency=excluded.urgency,
-                    timeSubmitted=excluded.timeSubmitted, deadline=excluded.deadline,
-                    status=excluded.status
+                    (request_id, patient_name, source_id, destination_id, category,
+                     urgency_level, weight, value, time_submitted, deadline, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(request_id) DO UPDATE SET
+                    patient_name=excluded.patient_name, source_id=excluded.source_id,
+                    destination_id=excluded.destination_id, category=excluded.category,
+                    urgency_level=excluded.urgency_level, weight=excluded.weight,
+                    value=excluded.value, time_submitted=excluded.time_submitted,
+                    deadline=excluded.deadline, status=excluded.status
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (String[] row : readCsv(csvPath,
-                    "requestId,sourceId,destinationId,category,urgency,timeSubmitted,deadline,status", 8)) {
+            readCsv(csvPath,
+                    "request_id,patient_name,source_id,destination_id,category,urgency_level,weight,value,time_submitted,deadline,status",
+                    11, row -> {
                 statement.setString(1, row[0]);
                 statement.setString(2, row[1]);
                 statement.setString(3, row[2]);
                 statement.setString(4, row[3]);
-                statement.setInt(5, Integer.parseInt(row[4]));
-                statement.setString(6, row[5]);
-                statement.setString(7, row[6]);
-                statement.setString(8, row[7]);
+                statement.setString(5, row[4]);
+                statement.setInt(6, Integer.parseInt(row[5]));
+                statement.setInt(7, Integer.parseInt(row[6]));
+                statement.setInt(8, Integer.parseInt(row[7]));
+                statement.setString(9, row[8]);
+                statement.setString(10, row[9]);
+                statement.setString(11, row[10]);
                 statement.addBatch();
-            }
+            });
             statement.executeBatch();
         }
     }
@@ -184,16 +185,15 @@ public final class DatabaseManager {
             throws IOException, SQLException {
         String sql = """
                 INSERT INTO algorithm_runs
-                    (runId, algorithmName, inputSize, timeNs, memoryKb, dateRun)
+                    (run_id, algorithm_name, input_size, time_ns, memory_kb, date_run)
                 VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(runId) DO UPDATE SET
-                    algorithmName=excluded.algorithmName, inputSize=excluded.inputSize,
-                    timeNs=excluded.timeNs, memoryKb=excluded.memoryKb,
-                    dateRun=excluded.dateRun
+                ON CONFLICT(run_id) DO UPDATE SET
+                    algorithm_name=excluded.algorithm_name, input_size=excluded.input_size,
+                    time_ns=excluded.time_ns, memory_kb=excluded.memory_kb,
+                    date_run=excluded.date_run
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (String[] row : readCsv(csvPath,
-                    "runId,algorithmName,inputSize,timeNs,memoryKb,dateRun", 6)) {
+            readCsv(csvPath, "runId,algorithmName,inputSize,timeNs,memoryKb,dateRun", 6, row -> {
                 statement.setInt(1, Integer.parseInt(row[0]));
                 statement.setString(2, row[1]);
                 statement.setInt(3, Integer.parseInt(row[2]));
@@ -201,14 +201,13 @@ public final class DatabaseManager {
                 statement.setLong(5, Long.parseLong(row[4]));
                 statement.setString(6, row[5]);
                 statement.addBatch();
-            }
+            });
             statement.executeBatch();
         }
     }
 
-    private static List<String[]> readCsv(Path path, String expectedHeader, int expectedColumns)
-            throws IOException {
-        List<String[]> rows = new ArrayList<>();
+    private static void readCsv(Path path, String expectedHeader, int expectedColumns,
+                                CsvRowConsumer consumer) throws IOException, SQLException {
         try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             String header = reader.readLine();
             if (header == null || !header.replace("\uFEFF", "").equals(expectedHeader)) {
@@ -226,15 +225,15 @@ public final class DatabaseManager {
                 if (row.length != expectedColumns) {
                     throw new IOException("Invalid column count in " + path + " at line " + lineNumber);
                 }
-                rows.add(row);
+                consumer.accept(row);
             }
         }
-        return rows;
     }
 
     /** Small RFC-4180-compatible parser sufficient for the project's seed files. */
     private static String[] parseCsvLine(String line) throws IOException {
-        List<String> values = new ArrayList<>();
+        String[] values = new String[line.length() + 1];
+        int valueCount = 0;
         StringBuilder value = new StringBuilder();
         boolean quoted = false;
 
@@ -248,7 +247,7 @@ public final class DatabaseManager {
                     quoted = !quoted;
                 }
             } else if (character == ',' && !quoted) {
-                values.add(value.toString());
+                values[valueCount++] = value.toString();
                 value.setLength(0);
             } else {
                 value.append(character);
@@ -258,7 +257,17 @@ public final class DatabaseManager {
         if (quoted) {
             throw new IOException("Unclosed quoted field in CSV row: " + line);
         }
-        values.add(value.toString());
-        return values.toArray(String[]::new);
+        values[valueCount++] = value.toString();
+
+        String[] result = new String[valueCount];
+        for (int index = 0; index < valueCount; index++) {
+            result[index] = values[index];
+        }
+        return result;
+    }
+
+    @FunctionalInterface
+    private interface CsvRowConsumer {
+        void accept(String[] row) throws SQLException;
     }
 }
