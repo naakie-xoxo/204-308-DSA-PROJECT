@@ -58,8 +58,25 @@ class SortAndSearchTest {
     @Test
     void testQuickSortDuplicates() {
         DynamicArray<Integer> arr = createArray(4, 1, 4, 1, 4);
-        QuickSort.sort(arr); // Must use index 22040372 for random pivot
+        QuickSort.sort(arr);
         assertDynamicArrayEquals(new int[]{1, 1, 4, 4, 4}, arr);
+    }
+
+    @Test
+    void testQuickSortPartitionPath() {
+        DynamicArray<Integer> arr = createArray(15, 3, 11, 7, 1, 14, 6, 9, 2, 13, 5, 12, 4, 10, 8);
+        QuickSort.sort(arr);
+        assertDynamicArrayEquals(
+                new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+                arr);
+    }
+
+    @Test
+    void testSortNullInputsAreSafe() {
+        assertDoesNotThrow(() -> SelectionSort.sort(null));
+        assertDoesNotThrow(() -> InsertionSort.sort(null));
+        assertDoesNotThrow(() -> MergeSort.sort(null));
+        assertDoesNotThrow(() -> QuickSort.sort(null));
     }
 
     // Test 28: Linear Search

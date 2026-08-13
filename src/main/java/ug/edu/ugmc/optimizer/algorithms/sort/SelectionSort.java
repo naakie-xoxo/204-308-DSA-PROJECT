@@ -21,6 +21,9 @@ public class SelectionSort {
     public static void sort(DynamicArray<Integer> arr) {
         comparisons = 0;
         swaps = 0;
+        if (arr == null || arr.size() <= 1) {
+            return;
+        }
         int n = arr.size();
         
         for (int i = 0; i < n - 1; i++) {
@@ -34,8 +37,8 @@ public class SelectionSort {
             if (minIdx != i) {
                 swaps++;
                 Integer temp = arr.get(i);
-                                arr.set(i, arr.get(minIdx));
-                                arr.set(minIdx, temp);
+                arr.set(i, arr.get(minIdx));
+                arr.set(minIdx, temp);
             }
         }
     }

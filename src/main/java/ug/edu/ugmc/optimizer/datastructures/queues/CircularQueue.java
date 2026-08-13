@@ -11,7 +11,7 @@ public class CircularQueue<T> {
     
     // The strict, unchangeable array buffer limit
     private final int capacity;
-    private T[] array;
+    private final T[] array;
     
     // Tracking pointers for modulo arithmetic
     private int front;
@@ -20,10 +20,27 @@ public class CircularQueue<T> {
 
     @SuppressWarnings("unchecked")
     public CircularQueue() {
-        // Enforcing the strict hospital bay limit calculation
-        this.capacity = (BASE_INDEX % 50) + 20;
+        this((BASE_INDEX % 50) + 20);
+    }
+
+    /**
+     * Creates a circular queue with an explicit capacity.
+     *
+     * <p>This overload supports bounded test scenarios and startup loaders that
+     * know how many records must be held in RAM. The no-argument constructor
+     * remains the project-default queue derived from Maron's index number.</p>
+     *
+     * @param capacity maximum number of elements held by the queue
+     * @throws IllegalArgumentException if {@code capacity} is not positive
+     */
+    @SuppressWarnings("unchecked")
+    public CircularQueue(int capacity) {
+        if (capacity <= 0) {
+            throw new IllegalArgumentException("Capacity must be greater than zero.");
+        }
+
+        this.capacity = capacity;
         this.array = (T[]) new Object[capacity];
-        
         this.front = 0;
         this.rear = -1;
         this.size = 0;
