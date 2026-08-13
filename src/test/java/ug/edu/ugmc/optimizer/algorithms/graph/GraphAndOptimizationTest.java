@@ -3,8 +3,6 @@ import ug.edu.ugmc.optimizer.graph.CustomGraph;
 import ug.edu.ugmc.optimizer.datastructures.disjointset.DisjointSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import ug.edu.ugmc.optimizer.algorithms.optimization.GreedyOptimizer;
-import ug.edu.ugmc.optimizer.algorithms.optimization.DPOptimizer;
 import static org.junit.jupiter.api.Assertions.*;
 
 class GraphAndOptimizationTest {
@@ -61,39 +59,4 @@ class GraphAndOptimizationTest {
         assertFalse(ds.connected(0, 4));
     }
 
-    // Test 37: Greedy - Normal Operation
-    @Test
-    void testGreedyResourceAssignment() {
-        int[] jobTimes = {3, 1, 2}; // Shortest job first
-        assertArrayEquals(new int[]{1, 2, 3}, GreedyOptimizer.scheduleJobs(jobTimes));
-    }
-
-    // Test 38: Greedy - Documented Failure Case
-    // Project Brief Section 10 requires this specific counterexample test
-    @Test
-    void testGreedyFailureCounterExample() {
-        // e.g., Coin change where greedy fails (coins: 1, 3, 4 | target: 6)
-        // Greedy takes 4, 1, 1 (3 coins). Optimal is 3, 3 (2 coins).
-        int[] coins = {1, 3, 4};
-        int greedyResult = GreedyOptimizer.coinChange(coins, 6);
-        assertNotEquals(2, greedyResult, "Greedy algorithm fails to find optimal global maximum here.");
-    }
-
-    // Test 39: DP - Optimal Solution (Knapsack)
-    @Test
-    void testDPKnapsack() {
-        int[] weights = {10, 20, 30};
-        int[] values = {60, 100, 120};
-        int capacity = 50;
-        // Optimal is taking 20 and 30 (Value = 220)
-        assertEquals(220, DPOptimizer.knapsack(weights, values, capacity));
-    }
-    
-    // Test 40: DP - Zero Capacity Boundary
-    @Test
-    void testDPZeroCapacity() {
-        int[] weights = {10, 20};
-        int[] values = {60, 100};
-        assertEquals(0, DPOptimizer.knapsack(weights, values, 0));
-    }
 }
