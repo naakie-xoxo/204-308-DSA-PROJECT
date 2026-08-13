@@ -1,7 +1,6 @@
 package ug.edu.ugmc.optimizer.algorithms.optimization;
 
 /**
-----
  * The Greedy algorithm attempts to find the optimal solution by sorting 
  * hospital requests by their Value-to-Weight ratio (highest first).
  * 
@@ -22,7 +21,10 @@ package ug.edu.ugmc.optimizer.algorithms.optimization;
  * Conclusion: Because hospital requests cannot be fractionally divided (0/1 constraint), 
  * the Greedy choice traps the system in a local maximum, leaving wasted capacity.
  */
-public class GreedyOptimizer {
+public final class GreedyOptimizer {
+
+    private GreedyOptimizer() {
+    }
 
     /**
      * Executes the Greedy heuristic for resource assignment.
@@ -105,23 +107,33 @@ public class GreedyOptimizer {
      * Greedy approach to Job Scheduling (Shortest Job First).
      * Hospital Use Case: Minimizing total patient waiting time by treating the fastest cases first.
      */
-    public static int[] scheduleJobs(int[] processingTimes) { // Changed return type to int[]
-        if (processingTimes == null || processingTimes.length == 0) return new int[0];
+    public static int[] scheduleJobs(int[] processingTimes) {
+        if (processingTimes == null) {
+            throw new IllegalArgumentException("Processing times cannot be null.");
+        }
+
+        int[] schedule = copy(processingTimes);
+        for (int index = 0; index < schedule.length; index++) {
+            if (schedule[index] <= 0) {
+                throw new IllegalArgumentException(
+                        "Processing time must be positive at index " + index + ".");
+            }
+        }
         
         // Inline selection sort to arrange times in ascending order
-        for (int i = 0; i < processingTimes.length - 1; i++) {
+        for (int i = 0; i < schedule.length - 1; i++) {
             int minIdx = i;
-            for (int j = i + 1; j < processingTimes.length; j++) {
-                if (processingTimes[j] < processingTimes[minIdx]) {
+            for (int j = i + 1; j < schedule.length; j++) {
+                if (schedule[j] < schedule[minIdx]) {
                     minIdx = j;
                 }
             }
-            int temp = processingTimes[minIdx];
-            processingTimes[minIdx] = processingTimes[i];
-            processingTimes[i] = temp;
+            int temp = schedule[minIdx];
+            schedule[minIdx] = schedule[i];
+            schedule[i] = temp;
         }
         
-        return processingTimes; 
+        return schedule;
     }
 
     /**
@@ -129,23 +141,42 @@ public class GreedyOptimizer {
      * Hospital Use Case: Pharmacy billing returning the minimum number of coins/bills.
      */
     public static int coinChange(int[] coins, int amount) {
-        if (coins == null || coins.length == 0 || amount <= 0) return 0;
+        if (coins == null) {
+            throw new IllegalArgumentException("Coin denominations cannot be null.");
+        }
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount cannot be negative.");
+        }
+        if (amount == 0) {
+            return 0;
+        }
+        if (coins.length == 0) {
+            return -1;
+        }
+
+        int[] denominations = copy(coins);
+        for (int index = 0; index < denominations.length; index++) {
+            if (denominations[index] <= 0) {
+                throw new IllegalArgumentException(
+                        "Coin denomination must be positive at index " + index + ".");
+            }
+        }
         
         // Sort descending (assuming coins might be unsorted)
-        for (int i = 0; i < coins.length - 1; i++) {
+        for (int i = 0; i < denominations.length - 1; i++) {
             int maxIdx = i;
-            for (int j = i + 1; j < coins.length; j++) {
-                if (coins[j] > coins[maxIdx]) {
+            for (int j = i + 1; j < denominations.length; j++) {
+                if (denominations[j] > denominations[maxIdx]) {
                     maxIdx = j;
                 }
             }
-            int temp = coins[maxIdx];
-            coins[maxIdx] = coins[i];
-            coins[i] = temp;
+            int temp = denominations[maxIdx];
+            denominations[maxIdx] = denominations[i];
+            denominations[i] = temp;
         }
         
         int coinCount = 0;
-        for (int coin : coins) {
+        for (int coin : denominations) {
             if (amount == 0) break;
             if (coin <= amount) {
                 coinCount += (amount / coin);
@@ -157,4 +188,11 @@ public class GreedyOptimizer {
         return amount == 0 ? coinCount : -1;
     }
 
+    private static int[] copy(int[] source) {
+        int[] result = new int[source.length];
+        for (int index = 0; index < source.length; index++) {
+            result[index] = source[index];
+        }
+        return result;
+    }
 }
