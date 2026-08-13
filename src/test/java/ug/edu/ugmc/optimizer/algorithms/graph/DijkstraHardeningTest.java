@@ -3,6 +3,7 @@ package ug.edu.ugmc.optimizer.algorithms.graph;
 import org.junit.jupiter.api.Test;
 import ug.edu.ugmc.optimizer.graph.CustomGraph;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -15,7 +16,10 @@ class DijkstraHardeningTest {
         graph.addNode("ER");
         graph.addNode("ICU");
 
-        assertEquals(-1, PathFinder.dijkstra(graph, "ER", "ICU"));
+        PathFinder.ShortestPathResult result = PathFinder.dijkstraWithRoute(graph, "ER", "ICU");
+
+        assertEquals(-1, result.getDistance());
+        assertArrayEquals(new String[0], result.getRoute());
     }
 
     @Test
@@ -53,15 +57,34 @@ class DijkstraHardeningTest {
     }
 
     @Test
-    void priorityQueueExpandsForManyRelaxations() {
-        int targetCount = 200;
-        CustomGraph graph = new CustomGraph(targetCount + 1);
+    void reconstructsTheUnambiguousShortestHospitalRoute() {
+        CustomGraph graph = new CustomGraph(3);
         graph.addNode("ER");
-        for (int i = 0; i < targetCount; i++) {
+        graph.addNode("Ward-A");
+        graph.addNode("ICU");
+        graph.addEdge("ER", "Ward-A", 5);
+        graph.addEdge("Ward-A", "ICU", 10);
+        graph.addEdge("ER", "ICU", 20);
+
+        PathFinder.ShortestPathResult result = PathFinder.dijkstraWithRoute(graph, "ER", "ICU");
+        String[] route = result.getRoute();
+
+        assertEquals(15, result.getDistance());
+        assertArrayEquals(new String[] {"ER", "Ward-A", "ICU"}, route);
+        assertEquals("ER", route[0]);
+        assertEquals("ICU", route[route.length - 1]);
+    }
+
+    @Test
+    void priorityQueueExpandsForA500NodeGraph() {
+        int nodeCount = 500;
+        CustomGraph graph = new CustomGraph(nodeCount);
+        graph.addNode("ER");
+        for (int i = 1; i < nodeCount; i++) {
             graph.addNode("Ward-" + i);
             graph.addEdge("ER", "Ward-" + i, 1);
         }
 
-        assertEquals(1, PathFinder.dijkstra(graph, "ER", "Ward-199"));
+        assertEquals(1, PathFinder.dijkstra(graph, "ER", "Ward-499"));
     }
 }

@@ -12,6 +12,40 @@ import ug.edu.ugmc.optimizer.datastructures.disjointset.DisjointSet;
 public class PathFinder {
 
     /**
+     * Immutable result of a Dijkstra search.  The route is ordered from source
+     * to target and is empty when the target is unreachable.
+     */
+    public static final class ShortestPathResult {
+        private final int distance;
+        private final String[] route;
+
+        private ShortestPathResult(int distance, String[] route) {
+            this.distance = distance;
+            this.route = route;
+        }
+
+        /** @return minimum travel time, or {@code -1} if no route exists */
+        public int getDistance() {
+            return distance;
+        }
+
+        /**
+         * Returns a copy of the source-to-target route so callers cannot alter
+         * the result stored by the pathfinder.
+         *
+         * @return hospital location IDs in route order, or an empty array when
+         *         the target is unreachable
+         */
+        public String[] getRoute() {
+            String[] routeCopy = new String[route.length];
+            for (int i = 0; i < route.length; i++) {
+                routeCopy[i] = route[i];
+            }
+            return routeCopy;
+        }
+    }
+
+    /**
      * Executes Dijkstra's Algorithm to find the shortest travel time between two
      * wards.
      * Integrates the project's custom priority queue for O((V + E) log V)
@@ -29,6 +63,25 @@ public class PathFinder {
      *         the method's integer return type
      */
     public static int dijkstra(CustomGraph graph, String startNode, String targetNode) {
+        return dijkstraWithRoute(graph, startNode, targetNode).getDistance();
+    }
+
+    /**
+     * Executes Dijkstra's algorithm and returns both the shortest travel time
+     * and the corresponding source-to-target route.
+     *
+     * @param graph hospital road network
+     * @param startNode starting hospital location ID
+     * @param targetNode destination hospital location ID
+     * @return shortest-path result; unreachable targets have distance
+     *         {@code -1} and an empty route
+     * @throws IllegalArgumentException if the graph or location IDs are invalid,
+     *         or if the graph contains a negative edge
+     * @throws ArithmeticException if a reachable route cannot be represented by
+     *         the result's integer distance
+     */
+    public static ShortestPathResult dijkstraWithRoute(
+            CustomGraph graph, String startNode, String targetNode) {
         requireGraph(graph);
         requireLocationId(startNode, "startNode");
         requireLocationId(targetNode, "targetNode");
@@ -45,10 +98,12 @@ public class PathFinder {
 
         long[] distances = new long[numNodes];
         boolean[] visited = new boolean[numNodes];
+        int[] predecessor = new int[numNodes];
 
         // Long.MAX_VALUE is a sentinel only; it is never used in arithmetic.
         for (int i = 0; i < numNodes; i++) {
             distances[i] = Long.MAX_VALUE;
+            predecessor[i] = -1;
         }
 
         distances[startIndex] = 0;
@@ -80,7 +135,9 @@ public class PathFinder {
             visited[currentIndex] = true;
 
             if (currentIndex == targetIndex) {
-                return Math.toIntExact(distances[targetIndex]);
+                return new ShortestPathResult(
+                        Math.toIntExact(distances[targetIndex]),
+                        reconstructRoute(graph, predecessor, startIndex, targetIndex));
             }
 
             EdgeNode neighbor = graph.getNeighbors(currentIndex);
@@ -98,6 +155,7 @@ public class PathFinder {
 
                     if (newDist < distances[neighborIndex]) {
                         distances[neighborIndex] = newDist;
+                        predecessor[neighborIndex] = currentIndex;
                         pq.insert(graph.getNodeName(neighborIndex), newDist);
                     }
                 }
@@ -105,7 +163,29 @@ public class PathFinder {
             }
         }
 
-        return -1;
+        return new ShortestPathResult(-1, new String[0]);
+    }
+
+    private static String[] reconstructRoute(
+            CustomGraph graph, int[] predecessor, int startIndex, int targetIndex) {
+        int routeLength = 1;
+        int currentIndex = targetIndex;
+
+        while (currentIndex != startIndex) {
+            currentIndex = predecessor[currentIndex];
+            if (currentIndex < 0) {
+                throw new IllegalStateException("Shortest-path predecessor chain is incomplete.");
+            }
+            routeLength++;
+        }
+
+        String[] route = new String[routeLength];
+        currentIndex = targetIndex;
+        for (int position = routeLength - 1; position >= 0; position--) {
+            route[position] = graph.getNodeName(currentIndex);
+            currentIndex = predecessor[currentIndex];
+        }
+        return route;
     }
 
     private static void validateDijkstraEdges(CustomGraph graph, int numNodes) {
