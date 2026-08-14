@@ -7,6 +7,7 @@ public class QuickSort {
     private static final int STUDENT_INDEX = 22389307;
     private static final int RANDOM_SEED = 22040372;
     private static final int SUBARRAY_CUTOFF = (STUDENT_INDEX % 10) + 5;
+    private static int insertionFallbackCount;
 
     /**
      * Sorting elements using QuickSort in ascending order.
@@ -14,6 +15,7 @@ public class QuickSort {
      * @param values custom DynamicArray containing Integer objects
      */
     public static void sort(DynamicArray<Integer> values) {
+        insertionFallbackCount = 0;
         if (values == null || values.size() <= 1) {
             return;
         }
@@ -27,6 +29,7 @@ public class QuickSort {
             PivotGenerator pivots) {
         if (low < high) {
             if (high - low + 1 <= SUBARRAY_CUTOFF) {
+                insertionFallbackCount++;
                 insertionSort(values, low, high);
             } else {
                 int pivotIndex = partition(values, low, high, pivots);
@@ -34,6 +37,16 @@ public class QuickSort {
                 quickSort(values, pivotIndex + 1, high, pivots);
             }
         }
+    }
+
+    /** Number of cutoff-triggered insertion-sort fallbacks in the latest run. */
+    public static int getInsertionFallbackCount() {
+        return insertionFallbackCount;
+    }
+
+    /** Exposes the exact student-index-derived cutoff for empirical evidence. */
+    public static int getSubarrayCutoff() {
+        return SUBARRAY_CUTOFF;
     }
 
     private static int partition(

@@ -15,6 +15,8 @@ public class InsertionSort {
     
     private static int comparisons = 0;
     private static int shifts = 0;
+    private static long shiftPenaltyApplications = 0;
+    private static long shiftPenaltyAccumulator = 0;
     
     /**
      * Sorts an integer array using Insertion Sort.
@@ -24,6 +26,8 @@ public class InsertionSort {
     public static void sort(DynamicArray<Integer> arr) {
         comparisons = 0;
         shifts = 0;
+        shiftPenaltyApplications = 0;
+        shiftPenaltyAccumulator = 0;
         if (arr == null || arr.size() <= 1) {
             return;
         }
@@ -37,6 +41,7 @@ public class InsertionSort {
                 comparisons++;
                 arr.set(j + 1, arr.get(j));
                 shifts++;
+                applyShiftPenalty();
                 j--;
             }
             if (j >= 0) comparisons++;
@@ -48,8 +53,24 @@ public class InsertionSort {
     public static int getComparisons() { return comparisons; }
     public static int getShifts() { return shifts; }
     public static long getWeightedShiftCost() { return shifts * SHIFT_PENALTY; }
+    public static long getShiftPenaltyApplications() { return shiftPenaltyApplications; }
+    public static long getShiftPenaltyAccumulator() { return shiftPenaltyAccumulator; }
     public static void resetCounters() {
         comparisons = 0;
         shifts = 0;
+        shiftPenaltyApplications = 0;
+        shiftPenaltyAccumulator = 0;
+    }
+
+    /**
+     * Applies observable constant work for every shift. The amount recorded for
+     * each application is derived from index 22302749, preserving O(N^2) while
+     * making the parameter's impact measurable instead of relying on a delay
+     * that the JVM could optimize away.
+     */
+    private static void applyShiftPenalty() {
+        shiftPenaltyApplications++;
+        shiftPenaltyAccumulator = (shiftPenaltyAccumulator * 31)
+                ^ (SHIFT_PENALTY + shiftPenaltyApplications);
     }
 }

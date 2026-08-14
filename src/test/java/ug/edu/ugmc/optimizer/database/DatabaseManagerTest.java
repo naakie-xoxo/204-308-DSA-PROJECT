@@ -48,7 +48,8 @@ class DatabaseManagerTest {
             assertEquals(100, count(connection, "roads"));
             assertEquals(300, count(connection, "service_requests"));
             assertEquals(30, count(connection, "resources"));
-            assertEquals(30, count(connection, "algorithm_runs"));
+            // 8 algorithms x 6 assessed scales x 3 measured trials.
+            assertEquals(144, count(connection, "algorithm_runs"));
         }
     }
 

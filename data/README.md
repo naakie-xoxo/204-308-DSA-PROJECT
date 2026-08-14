@@ -6,6 +6,7 @@ These CSV files are the canonical inputs for local database generation.
 - Preserve the existing headers and column order.
 - Keep IDs unique and all location references valid.
 - Treat each `roads.csv` row as one undirected edge; graph loaders should add both directions.
-- `algorithm_runs.csv` currently contains mock setup data. Replace it with repeated measured runs before final submission.
+- `algorithm_runs.csv` contains repeated measurements produced by
+  `PerformanceRunner`; do not replace it with estimated or hand-written values.
 
 After changing seed data, run `mvn test` and rebuild the local database with `DatabaseManager`.

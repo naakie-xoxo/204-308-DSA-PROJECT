@@ -22,4 +22,12 @@ Thumbs.db
 # Local experiment output; keep the results folder guide tracked.
 results/*
 !results/README.md
+!results/benchmark_raw.csv
+!results/benchmark_metadata.csv
+!results/sort_benchmarks.csv
+!results/search_benchmarks.csv
+!results/graph_benchmarks.csv
+!results/sort_runtimes.svg
+!results/search_runtimes.svg
+!results/graph_runtimes.svg
 *.log
