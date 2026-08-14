@@ -31,6 +31,23 @@ public class CustomSearch {
             }
         }
 
+        return binarySearchPresorted(arr, target);
+    }
+
+    /**
+     * Performs the pure O(log N) lookup after the caller has established that
+     * the data is sorted. The empirical lab validates and loads the structure
+     * before starting its timer, so setup work is not mislabeled as search time.
+     *
+     * @param arr sorted custom dynamic array
+     * @param target ID to locate
+     * @return target index or {@code -1} when absent
+     */
+    public static int binarySearchPresorted(DynamicArray<Integer> arr, int target) {
+        if (arr == null) {
+            throw new IllegalArgumentException("Array cannot be null.");
+        }
+
         int left = 0;
         int right = arr.size() - 1;
 

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620">
+<rect width="100%" height="100%" fill="white"/>
+<style>text{font-family:Arial,sans-serif;fill:#263238}.grid{stroke:#cfd8dc;stroke-width:1}.axis{stroke:#37474f;stroke-width:2}.label{font-size:13px}.title{font-size:24px;font-weight:bold}.legend{font-size:14px}</style>
+<text class="title" x="500" y="38" text-anchor="middle">UGMC Triage Sorting Runtime</text>
+<line class="grid" x1="95" y1="530" x2="960" y2="530"/>
+<text class="label" x="83" y="535" text-anchor="end">0.00</text>
+<line class="grid" x1="95" y1="440" x2="960" y2="440"/>
+<text class="label" x="83" y="445" text-anchor="end">1550</text>
+<line class="grid" x1="95" y1="350" x2="960" y2="350"/>
+<text class="label" x="83" y="355" text-anchor="end">3100</text>
+<line class="grid" x1="95" y1="260" x2="960" y2="260"/>
+<text class="label" x="83" y="265" text-anchor="end">4650</text>
+<line class="grid" x1="95" y1="170" x2="960" y2="170"/>
+<text class="label" x="83" y="175" text-anchor="end">6200</text>
+<line class="grid" x1="95" y1="80" x2="960" y2="80"/>
+<text class="label" x="83" y="85" text-anchor="end">7750</text>
+<line class="grid" x1="95" y1="80" x2="95" y2="530"/>
+<text class="label" x="95" y="555" text-anchor="middle">100</text>
+<line class="grid" x1="319" y1="80" x2="319" y2="530"/>
+<text class="label" x="319" y="555" text-anchor="middle">500</text>
+<line class="grid" x1="415" y1="80" x2="415" y2="530"/>
+<text class="label" x="415" y="555" text-anchor="middle">1000</text>
+<line class="grid" x1="640" y1="80" x2="640" y2="530"/>
+<text class="label" x="640" y="555" text-anchor="middle">5000</text>
+<line class="grid" x1="736" y1="80" x2="736" y2="530"/>
+<text class="label" x="736" y="555" text-anchor="middle">10000</text>
+<line class="grid" x1="960" y1="80" x2="960" y2="530"/>
+<text class="label" x="960" y="555" text-anchor="middle">50000</text>
+<line class="axis" x1="95" y1="80" x2="95" y2="530"/>
+<line class="axis" x1="95" y1="530" x2="960" y2="530"/>
+<text class="label" x="527" y="595" text-anchor="middle">Input scale (logarithmic spacing)</text>
+<text class="label" transform="translate(25 305) rotate(-90)" text-anchor="middle">Median runtime (ms)</text>
+<polyline fill="none" stroke="#1565c0" stroke-width="3" points="95,530 319,530 415,530 640,530 736,530 960,529 "/>
+<circle cx="95" cy="530" r="4" fill="#1565c0"/>
+<circle cx="319" cy="530" r="4" fill="#1565c0"/>
+<circle cx="415" cy="530" r="4" fill="#1565c0"/>
+<circle cx="640" cy="530" r="4" fill="#1565c0"/>
+<circle cx="736" cy="530" r="4" fill="#1565c0"/>
+<circle cx="960" cy="529" r="4" fill="#1565c0"/>
+<line x1="95" y1="60" x2="123" y2="60" stroke="#1565c0" stroke-width="4"/>
+<text class="legend" x="130" y="65">Merge Sort</text>
+<polyline fill="none" stroke="#00897b" stroke-width="3" points="95,530 319,530 415,530 640,530 736,530 960,529 "/>
+<circle cx="95" cy="530" r="4" fill="#00897b"/>
+<circle cx="319" cy="530" r="4" fill="#00897b"/>
+<circle cx="415" cy="530" r="4" fill="#00897b"/>
+<circle cx="640" cy="530" r="4" fill="#00897b"/>
+<circle cx="736" cy="530" r="4" fill="#00897b"/>
+<circle cx="960" cy="529" r="4" fill="#00897b"/>
+<line x1="300" y1="60" x2="328" y2="60" stroke="#00897b" stroke-width="4"/>
+<text class="legend" x="335" y="65">Quick Sort</text>
+<polyline fill="none" stroke="#ef6c00" stroke-width="3" points="95,530 319,530 415,530 640,526 736,521 960,275 "/>
+<circle cx="95" cy="530" r="4" fill="#ef6c00"/>
+<circle cx="319" cy="530" r="4" fill="#ef6c00"/>
+<circle cx="415" cy="530" r="4" fill="#ef6c00"/>
+<circle cx="640" cy="526" r="4" fill="#ef6c00"/>
+<circle cx="736" cy="521" r="4" fill="#ef6c00"/>
+<circle cx="960" cy="275" r="4" fill="#ef6c00"/>
+<line x1="505" y1="60" x2="533" y2="60" stroke="#ef6c00" stroke-width="4"/>
+<text class="legend" x="540" y="65">Selection Sort</text>
+<polyline fill="none" stroke="#c62828" stroke-width="3" points="95,530 319,530 415,530 640,526 736,518 960,80 "/>
+<circle cx="95" cy="530" r="4" fill="#c62828"/>
+<circle cx="319" cy="530" r="4" fill="#c62828"/>
+<circle cx="415" cy="530" r="4" fill="#c62828"/>
+<circle cx="640" cy="526" r="4" fill="#c62828"/>
+<circle cx="736" cy="518" r="4" fill="#c62828"/>
+<circle cx="960" cy="80" r="4" fill="#c62828"/>
+<line x1="710" y1="60" x2="738" y2="60" stroke="#c62828" stroke-width="4"/>
+<text class="legend" x="745" y="65">Insertion Sort</text>
+</svg>
