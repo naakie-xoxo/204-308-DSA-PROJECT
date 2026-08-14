@@ -140,7 +140,7 @@ public class ConsoleUI {
         }
 
         ServiceRequest next = triageQueue.peek();
-        System.out.println("Queue size: " + triageQueue.size(
+        System.out.println("Queue size: " + triageQueue.size()
                 + " / " + triageQueue.getCapacity());
         System.out.println("Next in line - ID: " + next.getId()
                 + ", Urgency: " + next.getUrgency());
