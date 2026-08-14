@@ -3,24 +3,29 @@ package ug.edu.ugmc.optimizer.ui.console;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
+import ug.edu.ugmc.optimizer.algorithms.graph.GraphTraversal;
+import ug.edu.ugmc.optimizer.algorithms.graph.PathFinder;
 import ug.edu.ugmc.optimizer.datastructures.hashing.CustomHashTable;
+import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
 import ug.edu.ugmc.optimizer.datastructures.queues.CircularQueue;
 import ug.edu.ugmc.optimizer.graph.CustomGraph;
+import ug.edu.ugmc.optimizer.models.ServiceRequest;
 
 /**
  * Examiner-facing console menu, input validation, and result formatting.
  *
- * Sprint 3 — Papa Kwame (L200), Universal Parameter 22271087.
+ * Sprint 3 - Papa Kwame (L200), Universal Parameter 22271087.
  * Invalid-input retry limit formula: (22271087 % 5) + 3 = 5 attempts.
  *
  * NOTE on architecture: the README's dependency flow is
  *   Console UI -> Application services -> Custom structures and algorithms
- * This class currently references Julyn's structures directly (CustomHashTable,
- * CircularQueue, CustomGraph) ONLY as a placeholder so the menu compiles and is
- * demoable right now. Once the application/services/ layer exists, swap these
- * direct references for calls into that service layer instead — the UI is not
- * supposed to touch the structures or the database directly per the architecture
- * rule in the README.
+ * This class currently references Julyn's structures (CustomHashTable,
+ * CircularQueue, CustomGraph) and Group B's algorithms (GraphTraversal,
+ * PathFinder) directly, since the application/services/ layer is still
+ * empty. Once that layer exists, swap these direct references for calls
+ * into that service layer instead - the UI is not supposed to touch the
+ * structures or the database directly per the architecture rule in the
+ * README.
  */
 public class ConsoleUI {
 
@@ -29,15 +34,12 @@ public class ConsoleUI {
 
     private final Scanner scanner;
 
-    // Placeholder references to Julyn's loaded structures.
-    // These should eventually be passed in (constructor injection) from the
-    // application/service layer once it exists, rather than instantiated here.
-    private final CustomHashTable<String, Object> patientLookup;
-    private final CircularQueue<Object> triageQueue;
+    private final CustomHashTable<String, ServiceRequest> patientLookup;
+    private final CircularQueue<ServiceRequest> triageQueue;
     private final CustomGraph hospitalGraph;
 
-    public ConsoleUI(CustomHashTable<String, Object> patientLookup,
-                      CircularQueue<Object> triageQueue,
+    public ConsoleUI(CustomHashTable<String, ServiceRequest> patientLookup,
+                      CircularQueue<ServiceRequest> triageQueue,
                       CustomGraph hospitalGraph) {
         this.scanner = new Scanner(System.in);
         this.patientLookup = patientLookup;
@@ -64,10 +66,10 @@ public class ConsoleUI {
                         handleTriageQueueView();
                         break;
                     case 3:
-                        handleGraphTraversal(); // Amankwah's BFS/DFS — not yet available
+                        handleGraphTraversal();
                         break;
                     case 4:
-                        handleMstCalculation(); // Denzel's Prim/Kruskal — not yet available
+                        handleMstCalculation();
                         break;
                     case 0:
                         running = false;
@@ -97,35 +99,38 @@ public class ConsoleUI {
         System.out.println("=== UGMC Smart Service Operations Optimizer ===");
         System.out.println("1. Patient ID Lookup (CustomHashTable)");
         System.out.println("2. View Pending Triage Queue (CircularQueue)");
-        System.out.println("3. Run Graph Traversal (BFS/DFS) [pending Amankwah's branch]");
-        System.out.println("4. Run MST Calculation (Prim/Kruskal) [pending Denzel's branch]");
+        System.out.println("3. Run Graph Traversal (BFS/DFS)");
+        System.out.println("4. Run MST Calculation (Prim/Kruskal)");
         System.out.println("0. Exit");
         System.out.print("Choose an option: ");
     }
 
     /**
      * Uses Julyn's CustomHashTable for O(1) patient ID lookups.
-     * Signature confirmed from group-c/db-integration:
-     *   V get(K key)
+     * Signature confirmed from main:
+     *   ServiceRequest get(String key)
      */
     private void handlePatientLookup() {
-        System.out.print("Enter patient ID: ");
-        String patientId = scanner.next();
+        System.out.print("Enter patient/request ID: ");
+        String requestId = scanner.next();
 
-        Object result = patientLookup.get(patientId);
+        ServiceRequest result = patientLookup.get(requestId);
         if (result == null) {
-            System.out.println("No record found for patient ID: " + patientId);
+            System.out.println("No record found for ID: " + requestId);
         } else {
-            System.out.println("Record found: " + result);
+            System.out.println("Record found - ID: " + result.getId()
+                    + ", Urgency: " + result.getUrgency()
+                    + ", Weight: " + result.getWeight()
+                    + ", Value: " + result.getValue());
         }
     }
 
     /**
      * Uses Julyn's CircularQueue for pending triage requests.
-     * Signature confirmed from group-c/db-integration:
-     *   T peek(), boolean isEmpty(), int size(), int getCapacity()
+     * Signature confirmed from main:
+     *   ServiceRequest peek(), boolean isEmpty(), int size(), int getCapacity()
      *
-     * NOTE: peek() only, not dequeue() — the console menu should not be
+     * NOTE: peek() only, not dequeue() - the console menu should not be
      * silently consuming pending triage requests just to display them.
      */
     private void handleTriageQueueView() {
@@ -134,32 +139,79 @@ public class ConsoleUI {
             return;
         }
 
-        System.out.println("Queue size: " + triageQueue.size()
+        ServiceRequest next = triageQueue.peek();
+        System.out.println("Queue size: " + triageQueue.size(
                 + " / " + triageQueue.getCapacity());
-        System.out.println("Next in line: " + triageQueue.peek());
+        System.out.println("Next in line - ID: " + next.getId()
+                + ", Urgency: " + next.getUrgency());
     }
 
     /**
-     * TODO: Wire this up once Amankwah's BFS/DFS lands (group-b, per docs/team-workstreams.md).
-     * His MAX_TRAVERSAL_DEPTH formula: (22394896 % 15) + 5.
-     * Expected usage once available, something like:
-     *   GraphTraversal.bfs(hospitalGraph, startIndex, maxDepth)
-     *   GraphTraversal.dfs(hospitalGraph, startIndex, maxDepth)
+     * Uses GraphTraversal.bfs/dfs (merged to main via PR #31).
+     * Both return a DynamicArray<String> of location IDs in discovery order,
+     * bounded by GraphTraversal's internal MAX_TRAVERSAL_DEPTH.
      */
     private void handleGraphTraversal() {
-        System.out.println("Graph traversal (BFS/DFS) is not available yet.");
-        System.out.println("This depends on Amankwah's branch, which hasn't been merged.");
+        System.out.print("Enter starting location ID: ");
+        String startNode = scanner.next();
+
+        System.out.print("Traversal type - B for BFS, D for DFS: ");
+        String type = scanner.next().trim();
+
+        try {
+            DynamicArray<String> result;
+            if (type.equalsIgnoreCase("B")) {
+                result = GraphTraversal.bfs(hospitalGraph, startNode);
+                System.out.println("BFS order from " + startNode + ":");
+            } else if (type.equalsIgnoreCase("D")) {
+                result = GraphTraversal.dfs(hospitalGraph, startNode);
+                System.out.println("DFS order from " + startNode + ":");
+            } else {
+                System.out.println("Unrecognized traversal type. Choose B or D.");
+                return;
+            }
+
+            for (int i = 0; i < result.size(); i++) {
+                System.out.print(result.get(i));
+                if (i < result.size() - 1) {
+                    System.out.print(" -> ");
+                }
+            }
+            System.out.println();
+        } catch (IllegalArgumentException e) {
+            System.out.println("Traversal failed: " + e.getMessage());
+        }
     }
 
     /**
-     * TODO: Wire this up once Denzel's Prim/Kruskal MST lands (group-b).
-     * His CONGESTION_PENALTY base weight modifier: 22013390.
-     * Expected usage once available, something like:
-     *   MstAlgorithms.kruskal(hospitalGraph)
-     *   MstAlgorithms.prim(hospitalGraph)
+     * Uses PathFinder.primMSTCost/kruskalMSTCost (merged to main via PR #21).
+     * Both return the total MST cost as an int, or -1 if the graph is
+     * disconnected.
      */
     private void handleMstCalculation() {
-        System.out.println("MST calculation (Prim/Kruskal) is not available yet.");
-        System.out.println("This depends on Denzel's branch, which hasn't been merged.");
+        System.out.print("MST algorithm - P for Prim, K for Kruskal: ");
+        String algo = scanner.next().trim();
+
+        try {
+            int cost;
+            if (algo.equalsIgnoreCase("P")) {
+                cost = PathFinder.primMSTCost(hospitalGraph);
+                System.out.print("Prim's MST cost: ");
+            } else if (algo.equalsIgnoreCase("K")) {
+                cost = PathFinder.kruskalMSTCost(hospitalGraph);
+                System.out.print("Kruskal's MST cost: ");
+            } else {
+                System.out.println("Unrecognized algorithm. Choose P or K.");
+                return;
+            }
+
+            if (cost == -1) {
+                System.out.println("Graph is disconnected - no spanning tree exists.");
+            } else {
+                System.out.println(cost);
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("MST calculation failed: " + e.getMessage());
+        }
     }
 }
