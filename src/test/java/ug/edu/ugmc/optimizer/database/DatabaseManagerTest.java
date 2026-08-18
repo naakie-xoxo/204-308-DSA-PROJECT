@@ -9,9 +9,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.stream.Collectors;
+import ug.edu.ugmc.optimizer.datastructures.hashing.CustomHashTable;
+import ug.edu.ugmc.optimizer.datastructures.queues.CircularQueue;
+import ug.edu.ugmc.optimizer.graph.CustomGraph;
+import ug.edu.ugmc.optimizer.models.ServiceRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -30,17 +31,13 @@ class DatabaseManagerTest {
 
     @Test
     void createsEveryRequiredTable() throws Exception {
-        try (Connection connection = connect();
-             var result = connection.createStatement().executeQuery(
-                     "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")) {
-            var names = new ArrayList<String>();
-            while (result.next()) {
-                names.add(result.getString(1));
-            }
-            Set<String> tables = names.stream().collect(Collectors.toSet());
-            assertTrue(tables.containsAll(Set.of(
-                    "locations", "roads", "service_requests", "resources",
-                    "algorithm_runs", "audit_events")));
+        try (Connection connection = connect()) {
+            assertTrue(tableExists(connection, "locations"));
+            assertTrue(tableExists(connection, "roads"));
+            assertTrue(tableExists(connection, "service_requests"));
+            assertTrue(tableExists(connection, "resources"));
+            assertTrue(tableExists(connection, "algorithm_runs"));
+            assertTrue(tableExists(connection, "audit_events"));
         }
     }
 
@@ -51,7 +48,8 @@ class DatabaseManagerTest {
             assertEquals(100, count(connection, "roads"));
             assertEquals(300, count(connection, "service_requests"));
             assertEquals(30, count(connection, "resources"));
-            assertEquals(30, count(connection, "algorithm_runs"));
+            // 8 algorithms x 6 assessed scales x 3 measured trials.
+            assertEquals(144, count(connection, "algorithm_runs"));
         }
     }
 
@@ -60,6 +58,7 @@ class DatabaseManagerTest {
         DatabaseManager.initializeDatabase(database, Path.of("schema.sql"), Path.of("data"));
         try (Connection connection = connect()) {
             assertEquals(100, count(connection, "roads"));
+            assertEquals(300, count(connection, "service_requests"));
         }
     }
 
@@ -69,10 +68,29 @@ class DatabaseManagerTest {
             statement.execute("PRAGMA foreign_keys = ON");
             assertThrows(SQLException.class, () -> statement.executeUpdate("""
                     INSERT INTO roads
-                        (fromLocationId, toLocationId, distance, travelTime, roadConditionWeight)
+                        (source_id, destination_id, distance, travel_time, road_condition_weight)
                     VALUES ('UNKNOWN', 'LOC001', 1.0, 1, 1)
                     """));
         }
+    }
+
+    @Test
+    void loaderBuildsTheRamStructuresExactlyOnce() {
+        DatabaseLoader loader = new DatabaseLoader("jdbc:sqlite:" + database.toAbsolutePath());
+        CustomHashTable<String, ServiceRequest> requests = new CustomHashTable<>();
+        CircularQueue<ServiceRequest> queue = new CircularQueue<>(300);
+        CustomGraph graph = new CustomGraph(50);
+
+        loader.loadServiceRequests(requests, queue);
+        loader.loadGraph(graph);
+
+        assertEquals(300, requests.getSize());
+        assertEquals(300, queue.size());
+        assertEquals(50, graph.getNumNodes());
+        assertEquals("REQ-001", requests.get("REQ-001").getId());
+        assertThrows(IllegalStateException.class,
+                () -> loader.loadServiceRequests(requests, queue));
+        assertThrows(IllegalStateException.class, () -> loader.loadGraph(graph));
     }
 
     private Connection connect() throws SQLException {
@@ -82,6 +100,16 @@ class DatabaseManagerTest {
     private static int count(Connection connection, String table) throws SQLException {
         try (var result = connection.createStatement().executeQuery("SELECT COUNT(*) FROM " + table)) {
             return result.getInt(1);
+        }
+    }
+
+    private static boolean tableExists(Connection connection, String table) throws SQLException {
+        try (var statement = connection.prepareStatement(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?")) {
+            statement.setString(1, table);
+            try (var result = statement.executeQuery()) {
+                return result.getInt(1) == 1;
+            }
         }
     }
 }

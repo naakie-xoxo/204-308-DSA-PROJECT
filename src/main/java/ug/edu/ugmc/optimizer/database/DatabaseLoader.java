@@ -87,17 +87,8 @@ public final class DatabaseLoader {
                 int value = results.getInt("value");
 
                 ServiceRequest request = new ServiceRequest(requestId, urgency, weight, value);
-                
-                // 1. Load EVERY patient into the CustomHashMap for O(1) lookups
                 map.put(requestId, request);
-                
-                // 2. Attempt to place the patient in a physical ER triage bed
-                try {
-                    queue.enqueue(request);
-                } catch (Exception e) {
-                    // Gracefully handle the overflow using the agent's LOGGER
-                    LOGGER.log(Level.WARNING, "ER Capacity Reached: Patient " + requestId + " placed in waiting overflow.");
-                }
+                queue.enqueue(request);
             }
         } catch (SQLException exception) {
             LOGGER.log(Level.SEVERE, "Failed to load service requests from SQLite.", exception);

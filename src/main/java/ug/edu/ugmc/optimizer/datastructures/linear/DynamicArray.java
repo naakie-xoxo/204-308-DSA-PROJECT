@@ -8,7 +8,21 @@ public class DynamicArray <T>{
     // Constructor to initialize the dynamic array with default capacity
    
     public DynamicArray() {
-        this.capacity = 10; // Initial capacity
+        this(10);
+    }
+
+    /**
+     * Creates an empty dynamic array with enough backing space for a known
+     * workload. This is useful in the empirical lab because structure loading
+     * must finish before algorithm timing begins.
+     *
+     * @param initialCapacity initial backing-array capacity
+     */
+    public DynamicArray(int initialCapacity) {
+        if (initialCapacity <= 0) {
+            throw new IllegalArgumentException("Initial capacity must be greater than zero.");
+        }
+        this.capacity = initialCapacity;
         this.size = 0;
         this.array = (T[]) new Object[capacity];
     }
