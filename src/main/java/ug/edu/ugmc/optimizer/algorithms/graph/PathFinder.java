@@ -45,6 +45,65 @@ public class PathFinder {
         }
     }
 
+    /** Immutable weighted edge selected for a minimum spanning tree. */
+    public static final class MstEdge {
+        private final String source;
+        private final String destination;
+        private final int weight;
+
+        private MstEdge(String source, String destination, int weight) {
+            this.source = source;
+            this.destination = destination;
+            this.weight = weight;
+        }
+
+        public String getSource() {
+            return source;
+        }
+
+        public String getDestination() {
+            return destination;
+        }
+
+        public int getWeight() {
+            return weight;
+        }
+    }
+
+    /** Immutable MST result containing both selected edges and total cost. */
+    public static final class MstResult {
+        private final int totalCost;
+        private final MstEdge[] edges;
+        private final boolean connected;
+
+        private MstResult(int totalCost, MstEdge[] edges, boolean connected) {
+            this.totalCost = totalCost;
+            this.edges = copyEdges(edges);
+            this.connected = connected;
+        }
+
+        /** @return total MST cost, or {@code -1} for a disconnected graph */
+        public int getTotalCost() {
+            return totalCost;
+        }
+
+        public MstEdge[] getEdges() {
+            return copyEdges(edges);
+        }
+
+        public boolean isConnected() {
+            return connected;
+        }
+
+        private static MstEdge[] copyEdges(MstEdge[] source) {
+            MstEdge[] copy = new MstEdge[source.length];
+            for (int index = 0; index < source.length; index++) {
+                copy[index] = source[index];
+            }
+            return copy;
+        }
+    }
+
     /**
      * Executes Dijkstra's Algorithm to find the shortest travel time between two
      * wards.
@@ -221,11 +280,19 @@ public class PathFinder {
      * @throws IllegalArgumentException if {@code graph} is null
      */
     public static int kruskalMSTCost(CustomGraph graph) {
+        return kruskalMST(graph).getTotalCost();
+    }
+
+    /**
+     * Calculates the selected edges and total cost using Kruskal's algorithm.
+     * Existing cost-only callers remain supported by {@link #kruskalMSTCost}.
+     */
+    public static MstResult kruskalMST(CustomGraph graph) {
         requireGraph(graph);
         int n = graph.getNumNodes();
 
         if (n == 0) {
-            return 0;
+            return new MstResult(0, new MstEdge[0], true);
         }
 
         int edgeCount = 0;
@@ -281,6 +348,7 @@ public class PathFinder {
 
         int totalCost = 0;
         int edgesUsed = 0;
+        MstEdge[] selectedEdges = new MstEdge[Math.max(0, n - 1)];
 
         for (int i = 0; i < edgeCount && edgesUsed < n - 1; i++) {
             int u = source[i];
@@ -288,16 +356,18 @@ public class PathFinder {
 
             if (!disjointSet.connected(u, v)) {
                 disjointSet.union(u, v);
+                selectedEdges[edgesUsed] = new MstEdge(
+                        graph.getNodeName(u), graph.getNodeName(v), weight[i]);
                 totalCost += weight[i];
                 edgesUsed++;
             }
         }
 
         if (edgesUsed != n - 1) {
-            return -1;
+            return new MstResult(-1, new MstEdge[0], false);
         }
 
-        return totalCost;
+        return new MstResult(totalCost, selectedEdges, true);
     }
 
     /**
@@ -307,22 +377,34 @@ public class PathFinder {
      * @return total weight of the MST, or -1 if the graph is disconnected
      */
     public static int primMSTCost(CustomGraph graph) {
+        return primMST(graph).getTotalCost();
+    }
+
+    /**
+     * Calculates the selected edges and total cost using Prim's algorithm.
+     * Existing cost-only callers remain supported by {@link #primMSTCost}.
+     */
+    public static MstResult primMST(CustomGraph graph) {
         requireGraph(graph);
         int n = graph.getNumNodes();
 
         if (n == 0) {
-            return 0;
+            return new MstResult(0, new MstEdge[0], true);
         }
 
         boolean[] inMST = new boolean[n];
         int[] minEdge = new int[n];
+        int[] parent = new int[n];
 
         for (int i = 0; i < n; i++) {
             minEdge[i] = Integer.MAX_VALUE;
+            parent[i] = -1;
         }
 
         minEdge[0] = 0;
         int totalCost = 0;
+        int edgesUsed = 0;
+        MstEdge[] selectedEdges = new MstEdge[Math.max(0, n - 1)];
 
         for (int count = 0; count < n; count++) {
             int u = -1;
@@ -336,11 +418,15 @@ public class PathFinder {
 
             // No reachable vertex means the graph is disconnected
             if (u == -1 || minEdge[u] == Integer.MAX_VALUE) {
-                return -1;
+                return new MstResult(-1, new MstEdge[0], false);
             }
 
             inMST[u] = true;
             totalCost += minEdge[u];
+            if (parent[u] >= 0) {
+                selectedEdges[edgesUsed++] = new MstEdge(
+                        graph.getNodeName(parent[u]), graph.getNodeName(u), minEdge[u]);
+            }
 
             // Update the cheapest connection for every unvisited vertex
             for (int v = 0; v < n; v++) {
@@ -348,11 +434,12 @@ public class PathFinder {
 
                 if (!inMST[v] && weight >= 0 && weight < minEdge[v]) {
                     minEdge[v] = weight;
+                    parent[v] = u;
                 }
             }
         }
 
-        return totalCost;
+        return new MstResult(totalCost, selectedEdges, true);
     }
 
     private static void requireGraph(CustomGraph graph) {
