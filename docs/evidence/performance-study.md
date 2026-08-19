@@ -121,17 +121,25 @@ inputs make the comparison defensible.
 
 Expected behavior: The repository's Prim implementation scans adjacency-matrix
 state and linearly selects the next minimum vertex, so it is O(V^2); it does
-not use a heap. Kruskal sorts edges and uses the custom `DisjointSet`, giving
-approximately O(E log E) for these inputs.
+not use a heap. The repository's Kruskal implementation collects the edges and
+sorts its parallel edge arrays with insertion sort. That sorting phase is O(E^2)
+in the worst and typical unsorted cases, and O(E) only when the edges are already
+ordered, followed by near-constant amortized `DisjointSet` operations. Because
+these benchmark graphs fix E=2V, the dominant typical/worst-case Kruskal work is
+O(E^2) = O((2V)^2) = O(V^2), the same asymptotic order as this Prim
+implementation, although their constants and data access differ.
 
 Observed behavior: At V=50/E=100, Prim averaged 256,100 ns and Kruskal 171,200
 ns. At V=500/E=1,000, Prim averaged 6,083,700 ns and Kruskal 3,710,500 ns. Both
 algorithms returned the same MST cost at every scale: 206, 382, 778, and 1,966.
 
-Assessment: Prim's stronger growth and Kruskal's advantage at V=500 broadly
-match the expected O(V^2) versus edge-sort behavior for E=2V. The V=100 and
-V=200 timings are not strictly ordered because of runtime variance, while the
-matching costs provide a correctness sanity check independent of timing.
+Assessment: Kruskal's measured advantage at V=500 reflects implementation
+constants and workload behavior, not a superior asymptotic class over Prim,
+because this project uses insertion sort for Kruskal's edge ordering. Both
+implementations have quadratic dominant phases on the E=2V benchmark family.
+The V=100 and V=200 timings are not strictly ordered because of runtime
+variance, while the matching costs provide a correctness sanity check
+independent of timing.
 
 ## Greedy and dynamic programming scope
 
