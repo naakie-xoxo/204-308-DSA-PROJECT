@@ -2,7 +2,6 @@ package ug.edu.ugmc.optimizer.algorithms.graph;
 
 import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
 import ug.edu.ugmc.optimizer.datastructures.queues.CustomQueue;
-import ug.edu.ugmc.optimizer.datastructures.queues.CustomStack;
 import ug.edu.ugmc.optimizer.graph.CustomGraph;
 import ug.edu.ugmc.optimizer.graph.CustomGraph.EdgeNode;
 
@@ -13,21 +12,8 @@ import ug.edu.ugmc.optimizer.graph.CustomGraph.EdgeNode;
  */
 public final class GraphTraversal {
 
-    private static final int MAX_TRAVERSAL_DEPTH = (22394896 % 15) + 5;
-
     private GraphTraversal() {
         // Utility class.
-    }
-
-    /** Carries a node's hop count through the BFS frontier. */
-    private static final class BfsFrame {
-        private final int nodeIndex;
-        private final int depth;
-
-        private BfsFrame(int nodeIndex, int depth) {
-            this.nodeIndex = nodeIndex;
-            this.depth = depth;
-        }
     }
 
     /**
@@ -37,12 +23,10 @@ public final class GraphTraversal {
      */
     private static final class DfsFrame {
         private final int nodeIndex;
-        private final int depth;
         private EdgeNode nextNeighbor;
 
-        private DfsFrame(int nodeIndex, int depth, EdgeNode nextNeighbor) {
+        private DfsFrame(int nodeIndex, EdgeNode nextNeighbor) {
             this.nodeIndex = nodeIndex;
-            this.depth = depth;
             this.nextNeighbor = nextNeighbor;
         }
     }
@@ -94,12 +78,11 @@ public final class GraphTraversal {
     }
 
     /**
-     * Traverses reachable hospital locations in breadth-first discovery order.
-     * The starting location has depth {@code 0}; locations at depth
-     * {@link #MAX_TRAVERSAL_DEPTH} are included but are not expanded.
+     * Traverses all reachable hospital locations in breadth-first discovery
+     * order.
      *
      * <p>Time complexity: O(V + E), where V and E are the locations and roads
-     * examined within the depth limit. Space complexity: O(V).</p>
+     * in the reachable component. Space complexity: O(V).</p>
      *
      * @param graph UGMC hospital road network
      * @param startNode ID of the location at which traversal begins
@@ -112,25 +95,21 @@ public final class GraphTraversal {
         int nodeCount = graph.getNumNodes();
         boolean[] visited = new boolean[nodeCount];
         DynamicArray<String> traversalOrder = new DynamicArray<>();
-        TraversalQueue<BfsFrame> frontier = new TraversalQueue<>();
+        TraversalQueue<Integer> frontier = new TraversalQueue<>();
 
         visited[startIndex] = true;
         traversalOrder.insert(graph.getNodeName(startIndex));
-        frontier.enqueue(new BfsFrame(startIndex, 0));
+        frontier.enqueue(startIndex);
 
         while (!frontier.isEmpty()) {
-            BfsFrame current = frontier.dequeue();
-            if (current.depth >= MAX_TRAVERSAL_DEPTH) {
-                continue;
-            }
-
-            EdgeNode neighbor = graph.getNeighbors(current.nodeIndex);
+            int currentIndex = frontier.dequeue();
+            EdgeNode neighbor = graph.getNeighbors(currentIndex);
             while (neighbor != null) {
                 int neighborIndex = requireValidNeighbor(neighbor, nodeCount);
                 if (!visited[neighborIndex]) {
                     visited[neighborIndex] = true;
                     traversalOrder.insert(graph.getNodeName(neighborIndex));
-                    frontier.enqueue(new BfsFrame(neighborIndex, current.depth + 1));
+                    frontier.enqueue(neighborIndex);
                 }
                 neighbor = neighbor.next;
             }
@@ -140,12 +119,12 @@ public final class GraphTraversal {
     }
 
     /**
-     * Traverses reachable hospital locations in iterative depth-first order.
-     * The explicit {@link CustomStack} contains only the active patrol path, so
-     * its size is bounded by {@code MAX_TRAVERSAL_DEPTH + 1}.
+     * Traverses all reachable hospital locations in iterative depth-first
+     * order. A graph-sized frame array stores the active path so traversal is
+     * not constrained by the audit log's fixed retention limit.
      *
      * <p>Time complexity: O(V + E), where V and E are the locations and roads
-     * examined within the depth limit. Space complexity: O(V).</p>
+     * in the reachable component. Space complexity: O(V).</p>
      *
      * @param graph UGMC hospital road network
      * @param startNode ID of the location at which traversal begins
@@ -158,17 +137,18 @@ public final class GraphTraversal {
         int nodeCount = graph.getNumNodes();
         boolean[] visited = new boolean[nodeCount];
         DynamicArray<String> traversalOrder = new DynamicArray<>();
-        CustomStack<DfsFrame> stack = new CustomStack<>();
+        DfsFrame[] stack = new DfsFrame[nodeCount];
+        int stackSize = 0;
 
         visited[startIndex] = true;
         traversalOrder.insert(graph.getNodeName(startIndex));
-        stack.push(new DfsFrame(startIndex, 0, graph.getNeighbors(startIndex)));
+        stack[stackSize++] = new DfsFrame(startIndex, graph.getNeighbors(startIndex));
 
-        while (!stack.isEmpty()) {
-            DfsFrame current = stack.peek();
+        while (stackSize > 0) {
+            DfsFrame current = stack[stackSize - 1];
 
-            if (current.depth >= MAX_TRAVERSAL_DEPTH || current.nextNeighbor == null) {
-                stack.pop();
+            if (current.nextNeighbor == null) {
+                stack[--stackSize] = null;
                 continue;
             }
 
@@ -179,10 +159,8 @@ public final class GraphTraversal {
             if (!visited[neighborIndex]) {
                 visited[neighborIndex] = true;
                 traversalOrder.insert(graph.getNodeName(neighborIndex));
-                stack.push(new DfsFrame(
-                        neighborIndex,
-                        current.depth + 1,
-                        graph.getNeighbors(neighborIndex)));
+                stack[stackSize++] = new DfsFrame(
+                        neighborIndex, graph.getNeighbors(neighborIndex));
             }
         }
 
@@ -204,13 +182,13 @@ public final class GraphTraversal {
         return bfsTraversal(graph, startNode);
     }
 
-    /** Returns whether the target is reachable by BFS within the depth limit. */
+    /** Returns whether the target is reachable from the start by BFS. */
     public static boolean bfsReachability(CustomGraph graph, String startNode, String targetNode) {
         validateAndResolve(graph, targetNode, "targetNode");
         return contains(bfsTraversal(graph, startNode), targetNode);
     }
 
-    /** Returns whether the target is reachable by DFS within the depth limit. */
+    /** Returns whether the target is reachable from the start by DFS. */
     public static boolean dfsReachability(CustomGraph graph, String startNode, String targetNode) {
         validateAndResolve(graph, targetNode, "targetNode");
         return contains(dfsTraversal(graph, startNode), targetNode);
