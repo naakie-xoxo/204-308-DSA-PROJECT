@@ -2,6 +2,7 @@ package ug.edu.ugmc.optimizer.algorithms.graph;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +16,17 @@ class MstAlgorithmsTest {
 
         assertEquals(10, PathFinder.primMSTCost(graph));
         assertEquals(10, PathFinder.kruskalMSTCost(graph));
+    }
+
+    @Test
+    void primAndKruskalExposeTheSelectedEdgesAsWellAsCost() {
+        CustomGraph graph = connectedGraph();
+
+        PathFinder.MstResult prim = PathFinder.primMST(graph);
+        PathFinder.MstResult kruskal = PathFinder.kruskalMST(graph);
+
+        assertMstResult(prim);
+        assertMstResult(kruskal);
     }
 
     @Test
@@ -59,5 +71,17 @@ class MstAlgorithmsTest {
         graph.addEdge("ICU", "Ward", 5);
         graph.addEdge("Lab", "Ward", 8);
         return graph;
+    }
+
+    private static void assertMstResult(PathFinder.MstResult result) {
+        assertTrue(result.isConnected());
+        assertEquals(10, result.getTotalCost());
+        assertEquals(3, result.getEdges().length);
+
+        int edgeWeightSum = 0;
+        for (PathFinder.MstEdge edge : result.getEdges()) {
+            edgeWeightSum += edge.getWeight();
+        }
+        assertEquals(result.getTotalCost(), edgeWeightSum);
     }
 }

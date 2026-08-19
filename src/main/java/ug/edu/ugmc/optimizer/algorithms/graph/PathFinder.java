@@ -11,30 +11,141 @@ import ug.edu.ugmc.optimizer.datastructures.disjointset.DisjointSet;
  */
 public class PathFinder {
 
-    // Universal Parameter assigned to Naakie
-    private static final int EMERGENCY_PENALTY_BASE = 22387455;
+    /**
+     * Immutable result of a Dijkstra search.  The route is ordered from source
+     * to target and is empty when the target is unreachable.
+     */
+    public static final class ShortestPathResult {
+        private final int distance;
+        private final String[] route;
+
+        private ShortestPathResult(int distance, String[] route) {
+            this.distance = distance;
+            this.route = route;
+        }
+
+        /** @return minimum travel time, or {@code -1} if no route exists */
+        public int getDistance() {
+            return distance;
+        }
+
+        /**
+         * Returns a copy of the source-to-target route so callers cannot alter
+         * the result stored by the pathfinder.
+         *
+         * @return hospital location IDs in route order, or an empty array when
+         *         the target is unreachable
+         */
+        public String[] getRoute() {
+            String[] routeCopy = new String[route.length];
+            for (int i = 0; i < route.length; i++) {
+                routeCopy[i] = route[i];
+            }
+            return routeCopy;
+        }
+    }
+
+    /** Immutable weighted edge selected for a minimum spanning tree. */
+    public static final class MstEdge {
+        private final String source;
+        private final String destination;
+        private final int weight;
+
+        private MstEdge(String source, String destination, int weight) {
+            this.source = source;
+            this.destination = destination;
+            this.weight = weight;
+        }
+
+        public String getSource() {
+            return source;
+        }
+
+        public String getDestination() {
+            return destination;
+        }
+
+        public int getWeight() {
+            return weight;
+        }
+    }
+
+    /** Immutable MST result containing both selected edges and total cost. */
+    public static final class MstResult {
+        private final int totalCost;
+        private final MstEdge[] edges;
+        private final boolean connected;
+
+        private MstResult(int totalCost, MstEdge[] edges, boolean connected) {
+            this.totalCost = totalCost;
+            this.edges = copyEdges(edges);
+            this.connected = connected;
+        }
+
+        /** @return total MST cost, or {@code -1} for a disconnected graph */
+        public int getTotalCost() {
+            return totalCost;
+        }
+
+        public MstEdge[] getEdges() {
+            return copyEdges(edges);
+        }
+
+        public boolean isConnected() {
+            return connected;
+        }
+
+        private static MstEdge[] copyEdges(MstEdge[] source) {
+            MstEdge[] copy = new MstEdge[source.length];
+            for (int index = 0; index < source.length; index++) {
+                copy[index] = source[index];
+            }
+            return copy;
+        }
+    }
 
     /**
      * Executes Dijkstra's Algorithm to find the shortest travel time between two
      * wards.
-     * Integrates Group A's CustomPriorityQueue for O(V + E log V) efficiency.
+     * Integrates the project's custom priority queue for O((V + E) log V)
+     * efficiency.  Edge weights are used exactly as stored in the graph; route
+     * costs must not be changed by algorithm-specific penalties.
      * 
      * @param graph      The hospital network graph.
      * @param startNode  The starting location ID (e.g., "ER").
      * @param targetNode The destination location ID (e.g., "ICU").
-     * @return The minimum total weight (travel time) to reach the target, or -1 if
-     *         unreachable.
+     * @return the minimum total weight (travel time), or {@code -1} when the
+     *         target is unreachable
+     * @throws IllegalArgumentException if the graph or location IDs are invalid,
+     *         or if the graph contains a negative edge
+     * @throws ArithmeticException if a reachable route cannot be represented by
+     *         the method's integer return type
      */
     public static int dijkstra(CustomGraph graph, String startNode, String targetNode) {
+        return dijkstraWithRoute(graph, startNode, targetNode).getDistance();
+    }
+
+    /**
+     * Executes Dijkstra's algorithm and returns both the shortest travel time
+     * and the corresponding source-to-target route.
+     *
+     * @param graph hospital road network
+     * @param startNode starting hospital location ID
+     * @param targetNode destination hospital location ID
+     * @return shortest-path result; unreachable targets have distance
+     *         {@code -1} and an empty route
+     * @throws IllegalArgumentException if the graph or location IDs are invalid,
+     *         or if the graph contains a negative edge
+     * @throws ArithmeticException if a reachable route cannot be represented by
+     *         the result's integer distance
+     */
+    public static ShortestPathResult dijkstraWithRoute(
+            CustomGraph graph, String startNode, String targetNode) {
+        requireGraph(graph);
+        requireLocationId(startNode, "startNode");
+        requireLocationId(targetNode, "targetNode");
+
         int numNodes = graph.getNumNodes();
-        int[] distances = new int[numNodes];
-        boolean[] visited = new boolean[numNodes];
-
-        // Initialize all distances to "infinity"
-        for (int i = 0; i < numNodes; i++) {
-            distances[i] = Integer.MAX_VALUE;
-        }
-
         int startIndex = graph.getIndex(startNode);
         int targetIndex = graph.getIndex(targetNode);
 
@@ -42,10 +153,20 @@ public class PathFinder {
             throw new IllegalArgumentException("Start or target node does not exist in the graph.");
         }
 
-        // Distance to the starting point is always 0
+        validateDijkstraEdges(graph, numNodes);
+
+        long[] distances = new long[numNodes];
+        boolean[] visited = new boolean[numNodes];
+        int[] predecessor = new int[numNodes];
+
+        // Long.MAX_VALUE is a sentinel only; it is never used in arithmetic.
+        for (int i = 0; i < numNodes; i++) {
+            distances[i] = Long.MAX_VALUE;
+            predecessor[i] = -1;
+        }
+
         distances[startIndex] = 0;
 
-        // Initialize Tawiah Kwaku's Priority Queue
         CustomPriorityQueue pq = new CustomPriorityQueue();
         pq.insert(startNode, 0);
 
@@ -61,30 +182,39 @@ public class PathFinder {
 
             int currentIndex = graph.getIndex(currentNode);
 
-            // Skip if we have already found the absolute shortest path to this node
+            if (currentIndex < 0 || currentIndex >= numNodes) {
+                throw new IllegalStateException("Priority queue contained an unknown graph node.");
+            }
+
+            // Stale entries are expected after a successful relaxation.  The
+            // first extraction for a node is its final shortest distance.
             if (visited[currentIndex]) {
                 continue;
             }
             visited[currentIndex] = true;
 
-            // Early exit if we reached our destination
             if (currentIndex == targetIndex) {
-                return distances[targetIndex];
+                return new ShortestPathResult(
+                        Math.toIntExact(distances[targetIndex]),
+                        reconstructRoute(graph, predecessor, startIndex, targetIndex));
             }
 
-            // Traverse the Adjacency List for the current node
             EdgeNode neighbor = graph.getNeighbors(currentIndex);
             while (neighbor != null) {
                 int neighborIndex = neighbor.destinationIndex;
 
-                if (!visited[neighborIndex]) {
-                    // Apply Naakie's congestion penalty derived from the universal parameter
-                    int congestionPenalty = (EMERGENCY_PENALTY_BASE % 3);
-                    int newDist = distances[currentIndex] + neighbor.weight + congestionPenalty;
+                if (neighborIndex < 0 || neighborIndex >= numNodes) {
+                    throw new IllegalStateException("Graph contains an invalid edge destination.");
+                }
 
-                    // Relaxation step
+                if (!visited[neighborIndex]) {
+                    // Negative weights are rejected before the search.  Exact
+                    // addition prevents a large travel-time sum from wrapping.
+                    long newDist = Math.addExact(distances[currentIndex], neighbor.weight);
+
                     if (newDist < distances[neighborIndex]) {
                         distances[neighborIndex] = newDist;
+                        predecessor[neighborIndex] = currentIndex;
                         pq.insert(graph.getNodeName(neighborIndex), newDist);
                     }
                 }
@@ -92,8 +222,51 @@ public class PathFinder {
             }
         }
 
-        // Return -1 if the target node is completely isolated/unreachable
-        return -1;
+        return new ShortestPathResult(-1, new String[0]);
+    }
+
+    private static String[] reconstructRoute(
+            CustomGraph graph, int[] predecessor, int startIndex, int targetIndex) {
+        int routeLength = 1;
+        int currentIndex = targetIndex;
+
+        while (currentIndex != startIndex) {
+            currentIndex = predecessor[currentIndex];
+            if (currentIndex < 0) {
+                throw new IllegalStateException("Shortest-path predecessor chain is incomplete.");
+            }
+            routeLength++;
+        }
+
+        String[] route = new String[routeLength];
+        currentIndex = targetIndex;
+        for (int position = routeLength - 1; position >= 0; position--) {
+            route[position] = graph.getNodeName(currentIndex);
+            currentIndex = predecessor[currentIndex];
+        }
+        return route;
+    }
+
+    private static void validateDijkstraEdges(CustomGraph graph, int numNodes) {
+        for (int source = 0; source < numNodes; source++) {
+            EdgeNode edge = graph.getNeighbors(source);
+            while (edge != null) {
+                if (edge.destinationIndex < 0 || edge.destinationIndex >= numNodes) {
+                    throw new IllegalStateException("Graph contains an invalid edge destination.");
+                }
+                if (edge.weight < 0) {
+                    throw new IllegalArgumentException(
+                            "Dijkstra requires non-negative edge weights; found " + edge.weight + ".");
+                }
+                edge = edge.next;
+            }
+        }
+    }
+
+    private static void requireLocationId(String locationId, String parameterName) {
+        if (locationId == null || locationId.trim().isEmpty()) {
+            throw new IllegalArgumentException(parameterName + " cannot be null or blank.");
+        }
     }
 
     /**
@@ -107,11 +280,19 @@ public class PathFinder {
      * @throws IllegalArgumentException if {@code graph} is null
      */
     public static int kruskalMSTCost(CustomGraph graph) {
+        return kruskalMST(graph).getTotalCost();
+    }
+
+    /**
+     * Calculates the selected edges and total cost using Kruskal's algorithm.
+     * Existing cost-only callers remain supported by {@link #kruskalMSTCost}.
+     */
+    public static MstResult kruskalMST(CustomGraph graph) {
         requireGraph(graph);
         int n = graph.getNumNodes();
 
         if (n == 0) {
-            return 0;
+            return new MstResult(0, new MstEdge[0], true);
         }
 
         int edgeCount = 0;
@@ -167,6 +348,7 @@ public class PathFinder {
 
         int totalCost = 0;
         int edgesUsed = 0;
+        MstEdge[] selectedEdges = new MstEdge[Math.max(0, n - 1)];
 
         for (int i = 0; i < edgeCount && edgesUsed < n - 1; i++) {
             int u = source[i];
@@ -174,16 +356,18 @@ public class PathFinder {
 
             if (!disjointSet.connected(u, v)) {
                 disjointSet.union(u, v);
+                selectedEdges[edgesUsed] = new MstEdge(
+                        graph.getNodeName(u), graph.getNodeName(v), weight[i]);
                 totalCost += weight[i];
                 edgesUsed++;
             }
         }
 
         if (edgesUsed != n - 1) {
-            return -1;
+            return new MstResult(-1, new MstEdge[0], false);
         }
 
-        return totalCost;
+        return new MstResult(totalCost, selectedEdges, true);
     }
 
     /**
@@ -193,22 +377,34 @@ public class PathFinder {
      * @return total weight of the MST, or -1 if the graph is disconnected
      */
     public static int primMSTCost(CustomGraph graph) {
+        return primMST(graph).getTotalCost();
+    }
+
+    /**
+     * Calculates the selected edges and total cost using Prim's algorithm.
+     * Existing cost-only callers remain supported by {@link #primMSTCost}.
+     */
+    public static MstResult primMST(CustomGraph graph) {
         requireGraph(graph);
         int n = graph.getNumNodes();
 
         if (n == 0) {
-            return 0;
+            return new MstResult(0, new MstEdge[0], true);
         }
 
         boolean[] inMST = new boolean[n];
         int[] minEdge = new int[n];
+        int[] parent = new int[n];
 
         for (int i = 0; i < n; i++) {
             minEdge[i] = Integer.MAX_VALUE;
+            parent[i] = -1;
         }
 
         minEdge[0] = 0;
         int totalCost = 0;
+        int edgesUsed = 0;
+        MstEdge[] selectedEdges = new MstEdge[Math.max(0, n - 1)];
 
         for (int count = 0; count < n; count++) {
             int u = -1;
@@ -222,11 +418,15 @@ public class PathFinder {
 
             // No reachable vertex means the graph is disconnected
             if (u == -1 || minEdge[u] == Integer.MAX_VALUE) {
-                return -1;
+                return new MstResult(-1, new MstEdge[0], false);
             }
 
             inMST[u] = true;
             totalCost += minEdge[u];
+            if (parent[u] >= 0) {
+                selectedEdges[edgesUsed++] = new MstEdge(
+                        graph.getNodeName(parent[u]), graph.getNodeName(u), minEdge[u]);
+            }
 
             // Update the cheapest connection for every unvisited vertex
             for (int v = 0; v < n; v++) {
@@ -234,11 +434,12 @@ public class PathFinder {
 
                 if (!inMST[v] && weight >= 0 && weight < minEdge[v]) {
                     minEdge[v] = weight;
+                    parent[v] = u;
                 }
             }
         }
 
-        return totalCost;
+        return new MstResult(totalCost, selectedEdges, true);
     }
 
     private static void requireGraph(CustomGraph graph) {
