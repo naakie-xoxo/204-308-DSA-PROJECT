@@ -32,8 +32,22 @@ public class CustomHashTable<K, V> {
 
     @SuppressWarnings("unchecked")
     public CustomHashTable() {
-        // Enforcing the calculated base capacity
-        this.buckets = new HashNode[BASE_CAPACITY];
+        this(BASE_CAPACITY);
+    }
+
+    /**
+     * Creates a table with an explicit bucket count for controlled load-factor
+     * experiments. Normal application callers continue to use the
+     * index-derived default capacity.
+     *
+     * @param capacity number of separate-chaining buckets
+     */
+    @SuppressWarnings("unchecked")
+    public CustomHashTable(int capacity) {
+        if (capacity <= 0) {
+            throw new IllegalArgumentException("Hash table capacity must be positive");
+        }
+        this.buckets = new HashNode[capacity];
         this.size = 0;
         this.collisionCount = 0;
     }
@@ -141,6 +155,11 @@ public class CustomHashTable<K, V> {
 
     public int getSize() {
         return size;
+    }
+
+    /** @return the current number of separate-chaining buckets */
+    public int getCapacity() {
+        return buckets.length;
     }
     
     public boolean isEmpty() {

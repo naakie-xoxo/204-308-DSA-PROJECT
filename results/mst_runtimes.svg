@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680">
+<rect width="100%" height="100%" fill="white"/>
+<style>text{font-family:Arial,sans-serif;fill:#263238}.grid{stroke:#cfd8dc;stroke-width:1}.axis{stroke:#37474f;stroke-width:2}.label{font-size:13px}.title{font-size:24px;font-weight:bold}.legend{font-size:14px}</style>
+<text class="title" x="600" y="38" text-anchor="middle">Prim vs Kruskal Runtime (E = 2V)</text>
+<line class="grid" x1="110" y1="585" x2="1155" y2="585"/>
+<text class="label" x="98" y="590" text-anchor="end">0.00</text>
+<line class="grid" x1="110" y1="488" x2="1155" y2="488"/>
+<text class="label" x="98" y="493" text-anchor="end">1.22</text>
+<line class="grid" x1="110" y1="391" x2="1155" y2="391"/>
+<text class="label" x="98" y="396" text-anchor="end">2.43</text>
+<line class="grid" x1="110" y1="294" x2="1155" y2="294"/>
+<text class="label" x="98" y="299" text-anchor="end">3.65</text>
+<line class="grid" x1="110" y1="197" x2="1155" y2="197"/>
+<text class="label" x="98" y="202" text-anchor="end">4.87</text>
+<line class="grid" x1="110" y1="100" x2="1155" y2="100"/>
+<text class="label" x="98" y="105" text-anchor="end">6.08</text>
+<line class="grid" x1="110" y1="100" x2="110" y2="585"/>
+<text class="label" x="110" y="610" text-anchor="middle">50</text>
+<line class="grid" x1="425" y1="100" x2="425" y2="585"/>
+<text class="label" x="425" y="610" text-anchor="middle">100</text>
+<line class="grid" x1="739" y1="100" x2="739" y2="585"/>
+<text class="label" x="739" y="610" text-anchor="middle">200</text>
+<line class="grid" x1="1155" y1="100" x2="1155" y2="585"/>
+<text class="label" x="1155" y="610" text-anchor="middle">500</text>
+<line class="axis" x1="110" y1="100" x2="110" y2="585"/>
+<line class="axis" x1="110" y1="585" x2="1155" y2="585"/>
+<text class="label" x="632" y="655" text-anchor="middle">Vertices (log scale)</text>
+<text class="label" transform="translate(28 342) rotate(-90)" text-anchor="middle">Average runtime (ms)</text>
+<polyline fill="none" stroke="#1565c0" stroke-width="3" points="110,565 425,480 739,494 1155,100 "/>
+<circle cx="110" cy="565" r="4" fill="#1565c0"/>
+<circle cx="425" cy="480" r="4" fill="#1565c0"/>
+<circle cx="739" cy="494" r="4" fill="#1565c0"/>
+<circle cx="1155" cy="100" r="4" fill="#1565c0"/>
+<line x1="70" y1="68" x2="98" y2="68" stroke="#1565c0" stroke-width="4"/>
+<text class="legend" x="105" y="73">Prim</text>
+<polyline fill="none" stroke="#00897b" stroke-width="3" points="110,571 425,509 739,489 1155,289 "/>
+<circle cx="110" cy="571" r="4" fill="#00897b"/>
+<circle cx="425" cy="509" r="4" fill="#00897b"/>
+<circle cx="739" cy="489" r="4" fill="#00897b"/>
+<circle cx="1155" cy="289" r="4" fill="#00897b"/>
+<line x1="290" y1="68" x2="318" y2="68" stroke="#00897b" stroke-width="4"/>
+<text class="legend" x="325" y="73">Kruskal</text>
+</svg>

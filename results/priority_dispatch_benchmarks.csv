@@ -1,0 +1,13 @@
+queue_size,operation,trials,average_runtime_ns
+100,insert_all,3,82467
+100,extract_all,3,104433
+500,insert_all,3,191400
+500,extract_all,3,294733
+1000,insert_all,3,219700
+1000,extract_all,3,489900
+5000,insert_all,3,1080300
+5000,extract_all,3,1827533
+10000,insert_all,3,1404700
+10000,extract_all,3,3129200
+20000,insert_all,3,1352967
+20000,extract_all,3,5723167
