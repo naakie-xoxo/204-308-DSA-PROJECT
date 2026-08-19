@@ -36,6 +36,18 @@ class HashTableTest {
         assertNull(table.get("UNKNOWN_ID"));
     }
 
+    @Test
+    void explicitCapacitySupportsControlledLoadFactorExperiments() {
+        CustomHashTable<Integer, Integer> table = new CustomHashTable<>(4);
+        table.put(0, 0);
+        table.put(4, 4);
+
+        assertEquals(4, table.getCapacity());
+        assertEquals(2, table.getSize());
+        assertEquals(1, table.getCollisionCount());
+        assertThrows(IllegalArgumentException.class, () -> new CustomHashTable<>(0));
+    }
+
     // Test 22: Tree - BST Inorder Traversal (Sorted output)
     @Test
     void testBSTInorder() {

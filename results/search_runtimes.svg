@@ -1,51 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680">
 <rect width="100%" height="100%" fill="white"/>
 <style>text{font-family:Arial,sans-serif;fill:#263238}.grid{stroke:#cfd8dc;stroke-width:1}.axis{stroke:#37474f;stroke-width:2}.label{font-size:13px}.title{font-size:24px;font-weight:bold}.legend{font-size:14px}</style>
-<text class="title" x="500" y="38" text-anchor="middle">UGMC Patient ID Lookup Runtime</text>
-<line class="grid" x1="95" y1="530" x2="960" y2="530"/>
-<text class="label" x="83" y="535" text-anchor="end">0.00</text>
-<line class="grid" x1="95" y1="440" x2="960" y2="440"/>
-<text class="label" x="83" y="445" text-anchor="end">0.29</text>
-<line class="grid" x1="95" y1="350" x2="960" y2="350"/>
-<text class="label" x="83" y="355" text-anchor="end">0.58</text>
-<line class="grid" x1="95" y1="260" x2="960" y2="260"/>
-<text class="label" x="83" y="265" text-anchor="end">0.88</text>
-<line class="grid" x1="95" y1="170" x2="960" y2="170"/>
-<text class="label" x="83" y="175" text-anchor="end">1.17</text>
-<line class="grid" x1="95" y1="80" x2="960" y2="80"/>
-<text class="label" x="83" y="85" text-anchor="end">1.46</text>
-<line class="grid" x1="95" y1="80" x2="95" y2="530"/>
-<text class="label" x="95" y="555" text-anchor="middle">100</text>
-<line class="grid" x1="319" y1="80" x2="319" y2="530"/>
-<text class="label" x="319" y="555" text-anchor="middle">500</text>
-<line class="grid" x1="415" y1="80" x2="415" y2="530"/>
-<text class="label" x="415" y="555" text-anchor="middle">1000</text>
-<line class="grid" x1="640" y1="80" x2="640" y2="530"/>
-<text class="label" x="640" y="555" text-anchor="middle">5000</text>
-<line class="grid" x1="736" y1="80" x2="736" y2="530"/>
-<text class="label" x="736" y="555" text-anchor="middle">10000</text>
-<line class="grid" x1="960" y1="80" x2="960" y2="530"/>
-<text class="label" x="960" y="555" text-anchor="middle">50000</text>
-<line class="axis" x1="95" y1="80" x2="95" y2="530"/>
-<line class="axis" x1="95" y1="530" x2="960" y2="530"/>
-<text class="label" x="527" y="595" text-anchor="middle">Input scale (logarithmic spacing)</text>
-<text class="label" transform="translate(25 305) rotate(-90)" text-anchor="middle">Median runtime (ms)</text>
-<polyline fill="none" stroke="#6a1b9a" stroke-width="3" points="95,528 319,520 415,496 640,232 736,331 960,80 "/>
-<circle cx="95" cy="528" r="4" fill="#6a1b9a"/>
-<circle cx="319" cy="520" r="4" fill="#6a1b9a"/>
-<circle cx="415" cy="496" r="4" fill="#6a1b9a"/>
-<circle cx="640" cy="232" r="4" fill="#6a1b9a"/>
-<circle cx="736" cy="331" r="4" fill="#6a1b9a"/>
-<circle cx="960" cy="80" r="4" fill="#6a1b9a"/>
-<line x1="95" y1="60" x2="123" y2="60" stroke="#6a1b9a" stroke-width="4"/>
-<text class="legend" x="130" y="65">Linear Search</text>
-<polyline fill="none" stroke="#2e7d32" stroke-width="3" points="95,530 319,530 415,529 640,529 736,529 960,529 "/>
-<circle cx="95" cy="530" r="4" fill="#2e7d32"/>
-<circle cx="319" cy="530" r="4" fill="#2e7d32"/>
-<circle cx="415" cy="529" r="4" fill="#2e7d32"/>
-<circle cx="640" cy="529" r="4" fill="#2e7d32"/>
-<circle cx="736" cy="529" r="4" fill="#2e7d32"/>
-<circle cx="960" cy="529" r="4" fill="#2e7d32"/>
-<line x1="300" y1="60" x2="328" y2="60" stroke="#2e7d32" stroke-width="4"/>
-<text class="legend" x="335" y="65">Binary Search</text>
+<text class="title" x="600" y="38" text-anchor="middle">UGMC Search Arithmetic-Mean Runtime</text>
+<line class="grid" x1="110" y1="585" x2="1155" y2="585"/>
+<text class="label" x="98" y="590" text-anchor="end">0.00</text>
+<line class="grid" x1="110" y1="488" x2="1155" y2="488"/>
+<text class="label" x="98" y="493" text-anchor="end">0.39</text>
+<line class="grid" x1="110" y1="391" x2="1155" y2="391"/>
+<text class="label" x="98" y="396" text-anchor="end">0.77</text>
+<line class="grid" x1="110" y1="294" x2="1155" y2="294"/>
+<text class="label" x="98" y="299" text-anchor="end">1.16</text>
+<line class="grid" x1="110" y1="197" x2="1155" y2="197"/>
+<text class="label" x="98" y="202" text-anchor="end">1.55</text>
+<line class="grid" x1="110" y1="100" x2="1155" y2="100"/>
+<text class="label" x="98" y="105" text-anchor="end">1.93</text>
+<line class="grid" x1="110" y1="100" x2="110" y2="585"/>
+<text class="label" x="110" y="610" text-anchor="middle">100</text>
+<line class="grid" x1="381" y1="100" x2="381" y2="585"/>
+<text class="label" x="381" y="610" text-anchor="middle">500</text>
+<line class="grid" x1="497" y1="100" x2="497" y2="585"/>
+<text class="label" x="497" y="610" text-anchor="middle">1000</text>
+<line class="grid" x1="768" y1="100" x2="768" y2="585"/>
+<text class="label" x="768" y="610" text-anchor="middle">5000</text>
+<line class="grid" x1="884" y1="100" x2="884" y2="585"/>
+<text class="label" x="884" y="610" text-anchor="middle">10000</text>
+<line class="grid" x1="1155" y1="100" x2="1155" y2="585"/>
+<text class="label" x="1155" y="610" text-anchor="middle">50000</text>
+<line class="axis" x1="110" y1="100" x2="110" y2="585"/>
+<line class="axis" x1="110" y1="585" x2="1155" y2="585"/>
+<text class="label" x="632" y="655" text-anchor="middle">Records (log scale)</text>
+<text class="label" transform="translate(28 342) rotate(-90)" text-anchor="middle">Average runtime (ms)</text>
+<polyline fill="none" stroke="#6a1b9a" stroke-width="3" points="110,582 381,571 497,569 768,382 884,100 1155,192 "/>
+<circle cx="110" cy="582" r="4" fill="#6a1b9a"/>
+<circle cx="381" cy="571" r="4" fill="#6a1b9a"/>
+<circle cx="497" cy="569" r="4" fill="#6a1b9a"/>
+<circle cx="768" cy="382" r="4" fill="#6a1b9a"/>
+<circle cx="884" cy="100" r="4" fill="#6a1b9a"/>
+<circle cx="1155" cy="192" r="4" fill="#6a1b9a"/>
+<line x1="70" y1="68" x2="98" y2="68" stroke="#6a1b9a" stroke-width="4"/>
+<text class="legend" x="105" y="73">Linear Search</text>
+<polyline fill="none" stroke="#2e7d32" stroke-width="3" points="110,584 381,584 497,585 768,583 884,584 1155,584 "/>
+<circle cx="110" cy="584" r="4" fill="#2e7d32"/>
+<circle cx="381" cy="584" r="4" fill="#2e7d32"/>
+<circle cx="497" cy="585" r="4" fill="#2e7d32"/>
+<circle cx="768" cy="583" r="4" fill="#2e7d32"/>
+<circle cx="884" cy="584" r="4" fill="#2e7d32"/>
+<circle cx="1155" cy="584" r="4" fill="#2e7d32"/>
+<line x1="290" y1="68" x2="318" y2="68" stroke="#2e7d32" stroke-width="4"/>
+<text class="legend" x="325" y="73">Binary Search</text>
 </svg>

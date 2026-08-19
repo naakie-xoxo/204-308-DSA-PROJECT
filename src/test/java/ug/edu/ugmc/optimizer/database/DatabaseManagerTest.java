@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -43,13 +44,16 @@ class DatabaseManagerTest {
 
     @Test
     void importsTheRequiredSeedCounts() throws Exception {
+        long algorithmRunRows;
+        try (var lines = Files.lines(Path.of("data", "algorithm_runs.csv"))) {
+            algorithmRunRows = lines.skip(1).count();
+        }
         try (Connection connection = connect()) {
             assertEquals(50, count(connection, "locations"));
             assertEquals(100, count(connection, "roads"));
             assertEquals(300, count(connection, "service_requests"));
             assertEquals(30, count(connection, "resources"));
-            // 8 algorithms x 6 assessed scales x 3 measured trials.
-            assertEquals(144, count(connection, "algorithm_runs"));
+            assertEquals(algorithmRunRows, count(connection, "algorithm_runs"));
         }
     }
 

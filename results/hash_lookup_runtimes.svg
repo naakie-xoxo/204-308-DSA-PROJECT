@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680">
+<rect width="100%" height="100%" fill="white"/>
+<style>text{font-family:Arial,sans-serif;fill:#263238}.grid{stroke:#cfd8dc;stroke-width:1}.axis{stroke:#37474f;stroke-width:2}.label{font-size:13px}.title{font-size:24px;font-weight:bold}.legend{font-size:14px}</style>
+<text class="title" x="600" y="38" text-anchor="middle">CustomHashTable Lookup Runtime by Load Factor</text>
+<line class="grid" x1="110" y1="585" x2="1155" y2="585"/>
+<text class="label" x="98" y="590" text-anchor="end">0.00</text>
+<line class="grid" x1="110" y1="488" x2="1155" y2="488"/>
+<text class="label" x="98" y="493" text-anchor="end">0.20</text>
+<line class="grid" x1="110" y1="391" x2="1155" y2="391"/>
+<text class="label" x="98" y="396" text-anchor="end">0.40</text>
+<line class="grid" x1="110" y1="294" x2="1155" y2="294"/>
+<text class="label" x="98" y="299" text-anchor="end">0.60</text>
+<line class="grid" x1="110" y1="197" x2="1155" y2="197"/>
+<text class="label" x="98" y="202" text-anchor="end">0.80</text>
+<line class="grid" x1="110" y1="100" x2="1155" y2="100"/>
+<text class="label" x="98" y="105" text-anchor="end">1.00</text>
+<line class="grid" x1="110" y1="100" x2="110" y2="585"/>
+<text class="label" x="110" y="610" text-anchor="middle">100</text>
+<line class="grid" x1="427" y1="100" x2="427" y2="585"/>
+<text class="label" x="427" y="610" text-anchor="middle">500</text>
+<line class="grid" x1="564" y1="100" x2="564" y2="585"/>
+<text class="label" x="564" y="610" text-anchor="middle">1000</text>
+<line class="grid" x1="882" y1="100" x2="882" y2="585"/>
+<text class="label" x="882" y="610" text-anchor="middle">5000</text>
+<line class="grid" x1="1018" y1="100" x2="1018" y2="585"/>
+<text class="label" x="1018" y="610" text-anchor="middle">10000</text>
+<line class="grid" x1="1155" y1="100" x2="1155" y2="585"/>
+<text class="label" x="1155" y="610" text-anchor="middle">20000</text>
+<line class="axis" x1="110" y1="100" x2="110" y2="585"/>
+<line class="axis" x1="110" y1="585" x2="1155" y2="585"/>
+<text class="label" x="632" y="655" text-anchor="middle">Keys (log scale)</text>
+<text class="label" transform="translate(28 342) rotate(-90)" text-anchor="middle">Average lookup-all runtime (ms)</text>
+<polyline fill="none" stroke="#1565c0" stroke-width="3" points="110,567 427,546 564,514 882,235 1018,365 1155,338 "/>
+<circle cx="110" cy="567" r="4" fill="#1565c0"/>
+<circle cx="427" cy="546" r="4" fill="#1565c0"/>
+<circle cx="564" cy="514" r="4" fill="#1565c0"/>
+<circle cx="882" cy="235" r="4" fill="#1565c0"/>
+<circle cx="1018" cy="365" r="4" fill="#1565c0"/>
+<circle cx="1155" cy="338" r="4" fill="#1565c0"/>
+<line x1="70" y1="68" x2="98" y2="68" stroke="#1565c0" stroke-width="4"/>
+<text class="legend" x="105" y="73">Load 0.500</text>
+<polyline fill="none" stroke="#00897b" stroke-width="3" points="110,578 427,559 564,544 882,195 1018,399 1155,307 "/>
+<circle cx="110" cy="578" r="4" fill="#00897b"/>
+<circle cx="427" cy="559" r="4" fill="#00897b"/>
+<circle cx="564" cy="544" r="4" fill="#00897b"/>
+<circle cx="882" cy="195" r="4" fill="#00897b"/>
+<circle cx="1018" cy="399" r="4" fill="#00897b"/>
+<circle cx="1155" cy="307" r="4" fill="#00897b"/>
+<line x1="290" y1="68" x2="318" y2="68" stroke="#00897b" stroke-width="4"/>
+<text class="legend" x="325" y="73">Load 0.750</text>
+<polyline fill="none" stroke="#ef6c00" stroke-width="3" points="110,578 427,551 564,541 882,330 1018,455 1155,335 "/>
+<circle cx="110" cy="578" r="4" fill="#ef6c00"/>
+<circle cx="427" cy="551" r="4" fill="#ef6c00"/>
+<circle cx="564" cy="541" r="4" fill="#ef6c00"/>
+<circle cx="882" cy="330" r="4" fill="#ef6c00"/>
+<circle cx="1018" cy="455" r="4" fill="#ef6c00"/>
+<circle cx="1155" cy="335" r="4" fill="#ef6c00"/>
+<line x1="510" y1="68" x2="538" y2="68" stroke="#ef6c00" stroke-width="4"/>
+<text class="legend" x="545" y="73">Load 1.000</text>
+<polyline fill="none" stroke="#c62828" stroke-width="3" points="110,577 427,547 564,539 882,524 1018,317 1155,296 "/>
+<circle cx="110" cy="577" r="4" fill="#c62828"/>
+<circle cx="427" cy="547" r="4" fill="#c62828"/>
+<circle cx="564" cy="539" r="4" fill="#c62828"/>
+<circle cx="882" cy="524" r="4" fill="#c62828"/>
+<circle cx="1018" cy="317" r="4" fill="#c62828"/>
+<circle cx="1155" cy="296" r="4" fill="#c62828"/>
+<line x1="730" y1="68" x2="758" y2="68" stroke="#c62828" stroke-width="4"/>
+<text class="legend" x="765" y="73">Load 1.500</text>
+<polyline fill="none" stroke="#6a1b9a" stroke-width="3" points="110,577 427,543 564,532 882,519 1018,100 1155,290 "/>
+<circle cx="110" cy="577" r="4" fill="#6a1b9a"/>
+<circle cx="427" cy="543" r="4" fill="#6a1b9a"/>
+<circle cx="564" cy="532" r="4" fill="#6a1b9a"/>
+<circle cx="882" cy="519" r="4" fill="#6a1b9a"/>
+<circle cx="1018" cy="100" r="4" fill="#6a1b9a"/>
+<circle cx="1155" cy="290" r="4" fill="#6a1b9a"/>
+<line x1="950" y1="68" x2="978" y2="68" stroke="#6a1b9a" stroke-width="4"/>
+<text class="legend" x="985" y="73">Load 2.000</text>
+</svg>
