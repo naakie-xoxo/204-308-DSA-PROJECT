@@ -56,11 +56,11 @@ class CustomSetTest {
     void serviceRequestCategoriesDemonstrateMembershipAndLookup() {
         CustomSet<String> categories = new CustomSet<>();
 
-        assertTrue(categories.add("Pharmacy"));
-        assertTrue(categories.add("Emergency"));
-        assertFalse(categories.add("Pharmacy"));
-        assertTrue(categories.contains("Pharmacy"));
-        assertFalse(categories.contains("Laboratory"));
+        assertTrue(categories.add("Ward Maintenance"));
+        assertTrue(categories.add("Lab Sample Transport"));
+        assertFalse(categories.add("Ward Maintenance"));
+        assertTrue(categories.contains("Ward Maintenance"));
+        assertFalse(categories.contains("Medical Supply Dispatch"));
         assertEquals(2, categories.size());
     }
 

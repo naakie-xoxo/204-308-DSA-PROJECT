@@ -7,11 +7,11 @@ evidence of a membership and lookup use case. The hospital-domain example uses
 Operations demonstrated: `add`, `contains`, duplicate `add`, and `size`.
 
 ```text
-add Pharmacy -> true
-add Emergency -> true
-add Pharmacy again -> false
-contains Pharmacy -> true
-contains Laboratory -> false
+add Ward Maintenance -> true
+add Lab Sample Transport -> true
+add Ward Maintenance again -> false
+contains Ward Maintenance -> true
+contains Medical Supply Dispatch -> false
 size -> 2
 ```
 
