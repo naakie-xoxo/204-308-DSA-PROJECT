@@ -3,9 +3,9 @@ package ug.edu.ugmc.optimizer.datastructures.hashing;
 /**
  * Project-owned hash set backed by {@link CustomHashTable}.
  *
- * <p>Each unique value is stored as a key with a private marker. Null values
- * are rejected for every membership-changing or membership-query operation,
- * matching the hash table's non-null key contract.</p>
+ * <p>Each unique value is stored as a key with a private marker. CustomSet
+ * deliberately rejects null values for all set operations, providing one
+ * consistent set-level null policy.</p>
  *
  * @param <T> value type stored by the set
  */

@@ -53,6 +53,18 @@ class CustomSetTest {
     }
 
     @Test
+    void serviceRequestCategoriesDemonstrateMembershipAndLookup() {
+        CustomSet<String> categories = new CustomSet<>();
+
+        assertTrue(categories.add("Pharmacy"));
+        assertTrue(categories.add("Emergency"));
+        assertFalse(categories.add("Pharmacy"));
+        assertTrue(categories.contains("Pharmacy"));
+        assertFalse(categories.contains("Laboratory"));
+        assertEquals(2, categories.size());
+    }
+
+    @Test
     void removalAffectsOnlyTheSelectedValue() {
         CustomSet<String> set = new CustomSet<>();
         set.add("A");
