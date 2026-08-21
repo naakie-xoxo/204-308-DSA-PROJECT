@@ -8,7 +8,7 @@ This is a recording guide for the required 5–8 minute project demonstration. I
 
 - Work from a clean, current `main` branch and confirm `git status --short` produces no output.
 - Run `mvn --batch-mode --no-transfer-progress test` and confirm it succeeds.
-- Ensure the committed CSV seed data and SQLite database inputs are available.
+- Ensure the committed CSV seed data and `schema.sql` are available; `hospital_system.db` is generated locally when the application initializes.
 - Ensure the committed performance CSV and SVG evidence is present under `results/`.
 - Close unnecessary terminals, notifications, and windows.
 - Do not regenerate performance experiments during the normal recording unless regeneration is intentional.
