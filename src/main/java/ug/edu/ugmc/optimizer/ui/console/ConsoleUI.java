@@ -57,23 +57,29 @@ public final class ConsoleUI {
 
         while (running) {
             printMenu();
-            if (!scanner.hasNext()) {
+            if (!scanner.hasNextLine()) {
                 output.println();
                 output.println("Input closed. Exiting system.");
                 break;
             }
 
-            if (!scanner.hasNextInt()) {
-                String invalidToken = scanner.next();
+            String menuInput = scanner.nextLine().trim();
+            if (menuInput.isEmpty()) {
+                continue;
+            }
+
+            int choice;
+            try {
+                choice = Integer.parseInt(menuInput);
+            } catch (NumberFormatException exception) {
                 invalidAttempts = recordInvalidAttempt(
-                        invalidAttempts, "Invalid non-numeric option: " + invalidToken + ".");
+                        invalidAttempts, "Invalid non-numeric option: " + menuInput + ".");
                 if (invalidAttempts >= MAX_INVALID_ATTEMPTS) {
                     break;
                 }
                 continue;
             }
 
-            int choice = scanner.nextInt();
             if (choice < MIN_MENU_CHOICE || choice > MAX_MENU_CHOICE) {
                 invalidAttempts = recordInvalidAttempt(
                         invalidAttempts,
@@ -93,8 +99,19 @@ public final class ConsoleUI {
 
             try {
                 dispatch(choice);
+            } catch (InputClosedException exception) {
+                output.println();
+                output.println("Input closed. Exiting system.");
+                running = false;
             } catch (Exception exception) {
                 output.println("Operation failed: " + safeMessage(exception));
+                try {
+                    waitForMainMenu();
+                } catch (InputClosedException inputClosed) {
+                    output.println();
+                    output.println("Input closed. Exiting system.");
+                    running = false;
+                }
             }
         }
     }
@@ -110,21 +127,100 @@ public final class ConsoleUI {
         return nextAttempt;
     }
 
-    private void dispatch(int choice) throws Exception {
+    private void dispatch(int choice) {
         switch (choice) {
-            case 1 -> handleRequestLookup();
-            case 2 -> handlePendingQueueView();
-            case 3 -> handleGraphTraversal();
-            case 4 -> handleMstCalculation();
-            case 5 -> handleDatabaseInitialization();
-            case 6 -> handlePriorityDispatch();
-            case 7 -> handleSearch();
-            case 8 -> handleSort();
-            case 9 -> handleShortestPath();
-            case 10 -> handleOptimization();
-            case 11 -> handleTestSummary();
-            case 12 -> handleExperiments();
+            case 1 -> runRepeatableFeature(
+                    "REQUEST ID LOOKUP", "look up another request", this::handleRequestLookup);
+            case 2 -> runOneShotFeature(
+                    "PENDING FIFO TRIAGE QUEUE", this::handlePendingQueueView);
+            case 3 -> runRepeatableFeature(
+                    "GRAPH TRAVERSAL", "run another traversal", this::handleGraphTraversal);
+            case 4 -> runRepeatableFeature(
+                    "MINIMUM SPANNING TREE", "run another MST", this::handleMstCalculation);
+            case 5 -> runOneShotFeature(
+                    "DATABASE INITIALIZATION", this::handleDatabaseInitialization);
+            case 6 -> runOneShotFeature(
+                    "PRIORITY DISPATCH", this::handlePriorityDispatch);
+            case 7 -> runRepeatableFeature(
+                    "REQUEST SEARCH", "search again", this::handleSearch);
+            case 8 -> runRepeatableFeature(
+                    "REQUEST URGENCY SORT", "run another sort", this::handleSort);
+            case 9 -> runRepeatableFeature(
+                    "SHORTEST PATH - DIJKSTRA", "find another route", this::handleShortestPath);
+            case 10 -> runRepeatableFeature(
+                    "GREEDY / DP OPTIMISATION", "try another capacity", this::handleOptimization);
+            case 11 -> runOneShotFeature(
+                    "LATEST MAVEN TEST SUMMARY", this::handleTestSummary);
+            case 12 -> runOneShotFeature(
+                    "PERFORMANCE EXPERIMENTS", this::handleExperiments);
             default -> throw new IllegalArgumentException("Unsupported menu choice: " + choice);
+        }
+    }
+
+    private void runRepeatableFeature(
+            String heading, String repeatAction, FeatureAction operation) {
+        printFeatureHeading(heading);
+        boolean repeat = true;
+        while (repeat) {
+            try {
+                operation.run();
+            } catch (InputClosedException exception) {
+                throw exception;
+            } catch (Exception exception) {
+                output.println("Operation failed: " + safeMessage(exception));
+            }
+            repeat = promptToRepeatOrReturn(repeatAction);
+        }
+    }
+
+    private void runOneShotFeature(String heading, FeatureAction operation) {
+        printFeatureHeading(heading);
+        try {
+            operation.run();
+        } catch (InputClosedException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            output.println("Operation failed: " + safeMessage(exception));
+        }
+        waitForMainMenu();
+    }
+
+    private void printFeatureHeading(String heading) {
+        output.println();
+        output.println("=== " + heading + " ===");
+        output.println();
+    }
+
+    private boolean promptToRepeatOrReturn(String repeatAction) {
+        while (true) {
+            output.println();
+            output.println("Press ENTER to " + repeatAction);
+            output.print("or B to return to the main menu: ");
+            String response = readLine();
+            if (response.isEmpty()) {
+                output.println();
+                return true;
+            }
+            if (response.equalsIgnoreCase("B")) {
+                output.println();
+                return false;
+            }
+            output.println();
+            output.println("Choose ENTER to continue or B to return to the main menu.");
+        }
+    }
+
+    private void waitForMainMenu() {
+        while (true) {
+            output.println();
+            output.print("Press ENTER to return to the main menu...");
+            String response = readLine();
+            if (response.isEmpty()) {
+                output.println();
+                return;
+            }
+            output.println();
+            output.println("Press ENTER without typing any other characters.");
         }
     }
 
@@ -325,22 +421,26 @@ public final class ConsoleUI {
 
     private String readToken(String prompt) {
         output.print(prompt);
-        if (!scanner.hasNext()) {
-            throw new IllegalStateException("Input closed before the operation was completed.");
-        }
-        return scanner.next().trim();
+        return readLine();
     }
 
     private Integer readInteger(String prompt) {
         output.print(prompt);
-        if (!scanner.hasNext()) {
-            throw new IllegalStateException("Input closed before the operation was completed.");
-        }
-        if (!scanner.hasNextInt()) {
-            output.println("Expected a whole number but received: " + scanner.next() + ".");
+        String value = readLine();
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException exception) {
+            String received = value.isEmpty() ? "(empty)" : value;
+            output.println("Expected a whole number but received: " + received + ".");
             return null;
         }
-        return scanner.nextInt();
+    }
+
+    private String readLine() {
+        if (!scanner.hasNextLine()) {
+            throw new InputClosedException();
+        }
+        return scanner.nextLine().trim();
     }
 
     private void printRequest(String label, RequestView request) {
@@ -379,5 +479,14 @@ public final class ConsoleUI {
         return message == null || message.isBlank()
                 ? exception.getClass().getSimpleName()
                 : message;
+    }
+
+    @FunctionalInterface
+    private interface FeatureAction {
+        void run() throws Exception;
+    }
+
+    private static final class InputClosedException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
     }
 }
