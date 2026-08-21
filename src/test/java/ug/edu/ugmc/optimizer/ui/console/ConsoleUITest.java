@@ -1,6 +1,7 @@
 package ug.edu.ugmc.optimizer.ui.console;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -14,14 +15,24 @@ import ug.edu.ugmc.optimizer.application.services.OptimizerService;
 
 class ConsoleUITest {
 
+    private static final String MAIN_MENU_HEADING =
+            "=== UGMC Smart Service Operations Optimizer ===";
+
     @Test
-    void validChoiceRoutesARequestLookupAndThenExitsCleanly() {
+    void requestLookupStaysInsideFeatureUntilBackAndCanRunTwice() {
         FakeOptimizerService service = new FakeOptimizerService();
 
-        String output = runScript(service, "1\nREQ-001\n0\n");
+        String output = runScript(service, "1\nREQ-001\n\nREQ-012\nB\n0\n");
 
-        assertEquals(1, service.lookupCalls);
+        assertEquals(2, service.lookupCalls);
         assertTrue(output.contains("Record found - ID: REQ-001"));
+        assertTrue(output.contains("Record found - ID: REQ-012"));
+        assertTrue(output.contains("Press ENTER to look up another request"));
+        assertEquals(2, countOccurrences(output, MAIN_MENU_HEADING));
+
+        int firstResult = output.indexOf("Record found - ID: REQ-001");
+        int secondResult = output.indexOf("Record found - ID: REQ-012");
+        assertFalse(output.substring(firstResult, secondResult).contains(MAIN_MENU_HEADING));
         assertTrue(output.contains("Exiting system."));
     }
 
@@ -45,8 +56,93 @@ class ConsoleUITest {
     }
 
     @Test
+    void dijkstraStaysInsideFeatureAndRunsTwoRoutesBeforeBack() {
+        FakeOptimizerService service = new FakeOptimizerService();
+
+        String output = runScript(
+                service, "9\nLOC002\nLOC012\n\nLOC003\nLOC004\nB\n0\n");
+
+        assertEquals(2, service.shortestPathCalls);
+        assertTrue(output.contains("=== SHORTEST PATH - DIJKSTRA ==="));
+        assertTrue(output.contains("Route: LOC002 -> LOC012"));
+        assertTrue(output.contains("Route: LOC003 -> LOC004"));
+        assertTrue(output.contains("Press ENTER to find another route"));
+        assertEquals(2, countOccurrences(output, MAIN_MENU_HEADING));
+
+        int firstRoute = output.indexOf("Route: LOC002 -> LOC012");
+        int secondRoute = output.indexOf("Route: LOC003 -> LOC004");
+        assertFalse(output.substring(firstRoute, secondRoute).contains(MAIN_MENU_HEADING));
+    }
+
+    @Test
+    void oneShotQueueResultWaitsWhenInputClosesAfterTheChoice() {
+        FakeOptimizerService service = new FakeOptimizerService();
+
+        String output = runScript(service, "2\n");
+
+        assertEquals(1, service.queueViewCalls);
+        assertTrue(output.contains("Queue size: 1 / 300"));
+        assertTrue(output.contains("Press ENTER to return to the main menu..."));
+        assertEquals(1, countOccurrences(output, MAIN_MENU_HEADING));
+    }
+
+    @Test
+    void enterReturnsFromOneShotQueueViewBeforeCleanExit() {
+        FakeOptimizerService service = new FakeOptimizerService();
+
+        String output = runScript(service, "2\n\n0\n");
+
+        assertEquals(1, service.queueViewCalls);
+        assertTrue(output.contains("Queue size: 1 / 300"));
+        assertTrue(output.contains("Press ENTER to return to the main menu..."));
+        assertEquals(2, countOccurrences(output, MAIN_MENU_HEADING));
+        assertTrue(output.contains("Exiting system."));
+    }
+
+    @Test
+    void invalidTraversalSubtypeStaysInsideFeatureAndAllowsRetry() {
+        FakeOptimizerService service = new FakeOptimizerService();
+
+        String output = runScript(service, "3\nLOC002\nX\n\nLOC003\nD\nB\n0\n");
+
+        assertTrue(output.contains("Unrecognized traversal type. Choose B or D."));
+        assertTrue(output.contains("DFS order from LOC003:"));
+        assertEquals(1, service.traversalCalls);
+        assertEquals(2, countOccurrences(output, MAIN_MENU_HEADING));
+
+        int error = output.indexOf("Unrecognized traversal type. Choose B or D.");
+        int retryResult = output.indexOf("DFS order from LOC003:");
+        assertFalse(output.substring(error, retryResult).contains(MAIN_MENU_HEADING));
+    }
+
+    @Test
+    void repeatableOperationFailureAllowsAnotherDijkstraAttempt() {
+        FakeOptimizerService service = new FakeOptimizerService();
+
+        String output = runScript(
+                service, "9\nINVALID\nLOC012\n\nLOC002\nLOC012\nB\n0\n");
+
+        assertEquals(2, service.shortestPathCalls);
+        assertTrue(output.contains("Operation failed: Unknown location: INVALID"));
+        assertTrue(output.contains("Route: LOC002 -> LOC012"));
+        assertEquals(2, countOccurrences(output, MAIN_MENU_HEADING));
+    }
+
+    @Test
+    void oneShotOperationFailureStillWaitsBeforeReturning() {
+        FakeOptimizerService service = new FakeOptimizerService();
+        service.failQueueView = true;
+
+        String output = runScript(service, "2\n");
+
+        assertTrue(output.contains("Operation failed: Queue unavailable"));
+        assertTrue(output.contains("Press ENTER to return to the main menu..."));
+        assertEquals(1, countOccurrences(output, MAIN_MENU_HEADING));
+    }
+
+    @Test
     void mstOperationPrintsEverySelectedEdgeAndTheTotalCost() {
-        String output = runScript(new FakeOptimizerService(), "4\nP\n0\n");
+        String output = runScript(new FakeOptimizerService(), "4\nP\nB\n0\n");
 
         assertTrue(output.contains("PRIM selected edges:"));
         assertTrue(output.contains("LOC001 -- LOC002 (4)"));
@@ -64,6 +160,17 @@ class ConsoleUITest {
         assertTrue(output.contains("Exiting system."));
     }
 
+    @Test
+    void validChoiceResetsAccumulatedMainMenuInvalidAttempts() {
+        String output = runScript(
+                new FakeOptimizerService(), "bad\n2\n\nbad\nbad\nbad\nbad\n0\n");
+
+        assertEquals(2, countOccurrences(output, "Invalid input. Attempt 1 of 5."));
+        assertTrue(output.contains("Invalid input. Attempt 4 of 5."));
+        assertFalse(output.contains("Too many invalid attempts. Terminating system."));
+        assertTrue(output.contains("Exiting system."));
+    }
+
     private static String runScript(FakeOptimizerService service, String script) {
         ByteArrayInputStream input = new ByteArrayInputStream(
                 script.getBytes(StandardCharsets.UTF_8));
@@ -75,8 +182,25 @@ class ConsoleUITest {
         return bytes.toString(StandardCharsets.UTF_8);
     }
 
+    private static int countOccurrences(String value, String target) {
+        int count = 0;
+        int fromIndex = 0;
+        while (true) {
+            int match = value.indexOf(target, fromIndex);
+            if (match < 0) {
+                return count;
+            }
+            count++;
+            fromIndex = match + target.length();
+        }
+    }
+
     private static final class FakeOptimizerService implements OptimizerService {
         private int lookupCalls;
+        private int queueViewCalls;
+        private int traversalCalls;
+        private int shortestPathCalls;
+        private boolean failQueueView;
 
         @Override
         public InitializationResult initializeData() {
@@ -91,6 +215,10 @@ class ConsoleUITest {
 
         @Override
         public QueueView viewPendingQueue() {
+            queueViewCalls++;
+            if (failQueueView) {
+                throw new IllegalStateException("Queue unavailable");
+            }
             return new QueueView(1, 300, new RequestView("REQ-001", 5, 2, 10));
         }
 
@@ -101,6 +229,7 @@ class ConsoleUITest {
 
         @Override
         public TraversalResult traverse(String startLocation, TraversalMethod method) {
+            traversalCalls++;
             return new TraversalResult(method, new String[] {startLocation});
         }
 
@@ -116,6 +245,10 @@ class ConsoleUITest {
 
         @Override
         public PathResult shortestPath(String startLocation, String targetLocation) {
+            shortestPathCalls++;
+            if (startLocation.equals("INVALID")) {
+                throw new IllegalArgumentException("Unknown location: " + startLocation);
+            }
             return new PathResult(true, 4, new String[] {startLocation, targetLocation});
         }
 
