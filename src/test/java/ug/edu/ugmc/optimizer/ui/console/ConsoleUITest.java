@@ -47,6 +47,29 @@ class ConsoleUITest {
     }
 
     @Test
+    void blankMainMenuInputIsIgnoredWithoutCountingAsInvalid() {
+        String output = runScript(new FakeOptimizerService(), "\n\n\n0\n");
+
+        assertTrue(output.contains("Exiting system."));
+        assertFalse(output.contains("Invalid non-numeric option: (empty)."));
+        assertFalse(output.contains("Invalid input. Attempt 1 of 5."));
+        assertFalse(output.contains("Too many invalid attempts. Terminating system."));
+    }
+
+    @Test
+    void blankMainMenuInputDoesNotAdvanceAnExistingInvalidCount() {
+        String output = runScript(new FakeOptimizerService(), "bad\n\n\n99\n0\n");
+
+        assertTrue(output.contains("Invalid non-numeric option: bad."));
+        assertTrue(output.contains("Invalid input. Attempt 1 of 5."));
+        assertTrue(output.contains("Invalid numeric option: 99."));
+        assertTrue(output.contains("Invalid input. Attempt 2 of 5."));
+        assertFalse(output.contains("Invalid input. Attempt 3 of 5."));
+        assertFalse(output.contains("Too many invalid attempts. Terminating system."));
+        assertTrue(output.contains("Exiting system."));
+    }
+
+    @Test
     void fiveMixedInvalidChoicesTerminateTheMenu() {
         String output = runScript(
                 new FakeOptimizerService(), "bad\n99\nbad\n99\nbad\n");

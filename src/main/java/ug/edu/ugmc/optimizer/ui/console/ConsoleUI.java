@@ -64,13 +64,16 @@ public final class ConsoleUI {
             }
 
             String menuInput = scanner.nextLine().trim();
+            if (menuInput.isEmpty()) {
+                continue;
+            }
+
             int choice;
             try {
                 choice = Integer.parseInt(menuInput);
             } catch (NumberFormatException exception) {
-                String invalidToken = menuInput.isEmpty() ? "(empty)" : menuInput;
                 invalidAttempts = recordInvalidAttempt(
-                        invalidAttempts, "Invalid non-numeric option: " + invalidToken + ".");
+                        invalidAttempts, "Invalid non-numeric option: " + menuInput + ".");
                 if (invalidAttempts >= MAX_INVALID_ATTEMPTS) {
                     break;
                 }
