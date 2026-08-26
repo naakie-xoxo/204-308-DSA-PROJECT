@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 import ug.edu.ugmc.optimizer.application.services.OptimizerService;
+import ug.edu.ugmc.optimizer.application.services.OptimizerService.CompletionOutcome;
 
 class ConsoleUITest {
 
@@ -22,18 +23,35 @@ class ConsoleUITest {
     void requestLookupStaysInsideFeatureUntilBackAndCanRunTwice() {
         FakeOptimizerService service = new FakeOptimizerService();
 
-        String output = runScript(service, "1\nREQ-001\n\nREQ-012\nB\n0\n");
+        String output = runScript(service, "1\nREQ-001\nREQ-012\nB\n0\n");
 
         assertEquals(2, service.lookupCalls);
-        assertTrue(output.contains("Record found - ID: REQ-001"));
-        assertTrue(output.contains("Record found - ID: REQ-012"));
-        assertTrue(output.contains("Press ENTER to look up another request"));
+        assertTrue(output.contains("Request ID:                   REQ-001"));
+        assertTrue(output.contains("Request ID:                   REQ-012"));
+        assertTrue(output.contains("Patient label (synthetic):"));
+        assertTrue(output.contains("Resource cost score:"));
+        assertTrue(output.contains("Optimisation benefit score:"));
+        assertTrue(output.contains("Enter another request ID or B to return:"));
         assertEquals(2, countOccurrences(output, MAIN_MENU_HEADING));
 
-        int firstResult = output.indexOf("Record found - ID: REQ-001");
-        int secondResult = output.indexOf("Record found - ID: REQ-012");
+        int firstResult = output.indexOf("Request ID:                   REQ-001");
+        int secondResult = output.indexOf("Request ID:                   REQ-012");
         assertFalse(output.substring(firstResult, secondResult).contains(MAIN_MENU_HEADING));
         assertTrue(output.contains("Exiting system."));
+    }
+
+    @Test
+    void malformedLookupShowsFormatGuidanceAndAcceptsTheNextIdDirectly() {
+        FakeOptimizerService service = new FakeOptimizerService();
+
+        String output = runScript(service, "1\nREQ001\nreq-001\nB\n0\n");
+
+        assertEquals(2, service.lookupCalls);
+        assertTrue(output.contains("No record found for ID: REQ001"));
+        assertTrue(output.contains("Expected request-ID format is similar to REQ-001."));
+        assertTrue(output.contains("Request found:"));
+        assertFalse(output.contains("Press ENTER to look up another request"));
+        assertEquals(2, countOccurrences(output, MAIN_MENU_HEADING));
     }
 
     @Test
@@ -104,7 +122,7 @@ class ConsoleUITest {
         String output = runScript(service, "2\n");
 
         assertEquals(1, service.queueViewCalls);
-        assertTrue(output.contains("Queue size: 1 / 300"));
+        assertTrue(output.contains("Pending requests: 1 / 300"));
         assertTrue(output.contains("Press ENTER to return to the main menu..."));
         assertEquals(1, countOccurrences(output, MAIN_MENU_HEADING));
     }
@@ -116,7 +134,7 @@ class ConsoleUITest {
         String output = runScript(service, "2\n\n0\n");
 
         assertEquals(1, service.queueViewCalls);
-        assertTrue(output.contains("Queue size: 1 / 300"));
+        assertTrue(output.contains("Pending requests: 1 / 300"));
         assertTrue(output.contains("Press ENTER to return to the main menu..."));
         assertEquals(2, countOccurrences(output, MAIN_MENU_HEADING));
         assertTrue(output.contains("Exiting system."));
@@ -174,6 +192,73 @@ class ConsoleUITest {
     }
 
     @Test
+    void databaseReloadShowsPersistentLifecycleCounts() {
+        String output = runScript(new FakeOptimizerService(), "5\n\n0\n");
+
+        assertTrue(output.contains("Total requests:               300"));
+        assertTrue(output.contains("Pending:                      298"));
+        assertTrue(output.contains("In Progress:                  1"));
+        assertTrue(output.contains("Completed:                    1"));
+        assertTrue(output.contains("Loaded locations:             50"));
+    }
+
+    @Test
+    void dispatchPrintsFullRecordAndConfirmsPersistentStatus() {
+        String output = runScript(new FakeOptimizerService(), "6\n\n0\n");
+
+        assertTrue(output.contains("Highest-priority pending request dispatched:"));
+        assertTrue(output.contains("Status:                       In Progress"));
+        assertTrue(output.contains("Status saved to SQLite."));
+    }
+
+    @Test
+    void completionRejectsPendingThenCompletesInProgressRequest() {
+        FakeOptimizerService service = new FakeOptimizerService();
+
+        String output = runScript(service, "13\nREQ-002\nREQ-001\n\n0\n");
+
+        assertEquals(2, service.completionCalls);
+        assertTrue(output.contains("REQ-002 is Pending and must be dispatched first."));
+        assertTrue(output.contains("Request REQ-001 marked Completed."));
+        assertTrue(output.contains("Status saved to SQLite."));
+    }
+
+    @Test
+    void sortOutputShowsBeforeDistributionAndBothEndsOfSortedData() {
+        String output = runScript(new FakeOptimizerService(), "8\nM\nB\n0\n");
+
+        assertTrue(output.contains("Before sample:"));
+        assertTrue(output.contains("Urgency distribution:"));
+        assertTrue(output.contains("Lowest 3 after sort:"));
+        assertTrue(output.contains("Highest 3 after sort:"));
+    }
+
+    @Test
+    void allFourSortChoicesRemainAvailableInOneFeatureSession() {
+        FakeOptimizerService service = new FakeOptimizerService();
+
+        String output = runScript(service, "8\nS\n\nI\n\nM\n\nQ\nB\n0\n");
+
+        assertEquals(4, service.sortCalls);
+        assertTrue(output.contains("Algorithm: SELECTION"));
+        assertTrue(output.contains("Algorithm: INSERTION"));
+        assertTrue(output.contains("Algorithm: MERGE"));
+        assertTrue(output.contains("Algorithm: QUICK"));
+        assertEquals(2, countOccurrences(output, MAIN_MENU_HEADING));
+    }
+
+    @Test
+    void optimizationOutputExplainsBothSelectionsAndCapacityArithmetic() {
+        String output = runScript(new FakeOptimizerService(), "10\n10\nB\n0\n");
+
+        assertTrue(output.contains("Scores are unitless modelling values."));
+        assertTrue(output.contains("GREEDY"));
+        assertTrue(output.contains("DYNAMIC PROGRAMMING"));
+        assertTrue(output.contains("DP improvement over Greedy:"));
+        assertTrue(output.contains("It does not determine dispatch order."));
+    }
+
+    @Test
     void zeroIsAValidCleanExitWithoutCallingAnOperation() {
         FakeOptimizerService service = new FakeOptimizerService();
 
@@ -223,17 +308,22 @@ class ConsoleUITest {
         private int queueViewCalls;
         private int traversalCalls;
         private int shortestPathCalls;
+        private int completionCalls;
+        private int sortCalls;
         private boolean failQueueView;
 
         @Override
         public InitializationResult initializeData() {
-            return new InitializationResult(300, 300, 50);
+            return new InitializationResult(300, 298, 1, 1, 300, 50);
         }
 
         @Override
         public RequestView findRequest(String requestId) {
             lookupCalls++;
-            return new RequestView(requestId, 5, 2, 10);
+            if (requestId.equalsIgnoreCase("REQ001")) {
+                return null;
+            }
+            return request(requestId, "Pending");
         }
 
         @Override
@@ -242,12 +332,23 @@ class ConsoleUITest {
             if (failQueueView) {
                 throw new IllegalStateException("Queue unavailable");
             }
-            return new QueueView(1, 300, new RequestView("REQ-001", 5, 2, 10));
+            return new QueueView(1, 300, request("REQ-001", "Pending"));
         }
 
         @Override
         public RequestView dispatchNextPriority() {
-            return new RequestView("REQ-001", 5, 2, 10);
+            return request("REQ-001", "In Progress");
+        }
+
+        @Override
+        public CompletionResult completeRequest(String requestId) {
+            completionCalls++;
+            if (requestId.equalsIgnoreCase("REQ-002")) {
+                return new CompletionResult(
+                        CompletionOutcome.MUST_DISPATCH_FIRST, request("REQ-002", "Pending"));
+            }
+            return new CompletionResult(
+                    CompletionOutcome.COMPLETED, request(requestId, "Completed"));
         }
 
         @Override
@@ -263,7 +364,13 @@ class ConsoleUITest {
 
         @Override
         public SortResult sortUrgencies(SortMethod method) {
-            return new SortResult(method, 3, new int[] {1, 3, 5});
+            sortCalls++;
+            return new SortResult(
+                    method, 5,
+                    new int[] {5, 1, 3},
+                    new int[] {1, 2, 3},
+                    new int[] {3, 4, 5},
+                    new int[] {1, 1, 1, 1, 1});
         }
 
         @Override
@@ -285,7 +392,9 @@ class ConsoleUITest {
 
         @Override
         public OptimizationResult optimizeRequests(int capacity) {
-            return new OptimizationResult(9, 10, capacity, new String[] {"REQ-001"});
+            return new OptimizationResult(
+                    capacity, 9, 6, new String[] {"REQ-001"},
+                    10, 8, new String[] {"REQ-002"});
         }
 
         @Override
@@ -296,6 +405,21 @@ class ConsoleUITest {
         @Override
         public void runExperiments(int trials) {
             // No external work is required by the scripted UI test double.
+        }
+
+        private static RequestView request(String requestId, String status) {
+            return new RequestView(
+                    requestId,
+                    "Patient_" + requestId,
+                    "Ward Maintenance",
+                    "LOC001",
+                    "LOC002",
+                    5,
+                    status,
+                    "08:00",
+                    "09:00",
+                    2,
+                    10);
         }
     }
 }

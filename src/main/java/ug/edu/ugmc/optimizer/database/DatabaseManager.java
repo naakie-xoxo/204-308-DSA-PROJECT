@@ -158,7 +158,7 @@ public final class DatabaseManager {
                     destination_id=excluded.destination_id, category=excluded.category,
                     urgency_level=excluded.urgency_level, weight=excluded.weight,
                     value=excluded.value, time_submitted=excluded.time_submitted,
-                    deadline=excluded.deadline, status=excluded.status
+                    deadline=excluded.deadline
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             readCsv(csvPath,

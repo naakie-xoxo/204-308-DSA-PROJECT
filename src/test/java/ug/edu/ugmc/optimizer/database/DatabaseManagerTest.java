@@ -8,8 +8,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+
 import ug.edu.ugmc.optimizer.datastructures.hashing.CustomHashTable;
 import ug.edu.ugmc.optimizer.datastructures.queues.CircularQueue;
 import ug.edu.ugmc.optimizer.graph.CustomGraph;
@@ -63,6 +65,29 @@ class DatabaseManagerTest {
         try (Connection connection = connect()) {
             assertEquals(100, count(connection, "roads"));
             assertEquals(300, count(connection, "service_requests"));
+        }
+    }
+
+    @Test
+    void repeatedInitializationPreservesRuntimeRequestStatus() throws Exception {
+        try (Connection connection = connect();
+                PreparedStatement update = connection.prepareStatement(
+                        "UPDATE service_requests SET status = ? WHERE request_id = ?")) {
+            update.setString(1, "In Progress");
+            update.setString(2, "REQ-001");
+            assertEquals(1, update.executeUpdate());
+        }
+
+        DatabaseManager.initializeDatabase(database, Path.of("schema.sql"), Path.of("data"));
+
+        try (Connection connection = connect();
+                PreparedStatement select = connection.prepareStatement(
+                        "SELECT status FROM service_requests WHERE request_id = ?")) {
+            select.setString(1, "REQ-001");
+            try (var result = select.executeQuery()) {
+                assertTrue(result.next());
+                assertEquals("In Progress", result.getString(1));
+            }
         }
     }
 

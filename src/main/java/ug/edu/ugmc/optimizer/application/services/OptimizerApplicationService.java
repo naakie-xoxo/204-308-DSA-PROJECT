@@ -3,6 +3,7 @@ package ug.edu.ugmc.optimizer.application.services;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -12,6 +13,7 @@ import ug.edu.ugmc.optimizer.algorithms.graph.GraphTraversal;
 import ug.edu.ugmc.optimizer.algorithms.graph.PathFinder;
 import ug.edu.ugmc.optimizer.algorithms.optimization.DPOptimizer;
 import ug.edu.ugmc.optimizer.algorithms.optimization.GreedyOptimizer;
+import ug.edu.ugmc.optimizer.algorithms.optimization.GreedyOptimizer.GreedyResult;
 import ug.edu.ugmc.optimizer.algorithms.search.CustomSearch;
 import ug.edu.ugmc.optimizer.algorithms.sort.InsertionSort;
 import ug.edu.ugmc.optimizer.algorithms.sort.MergeSort;
@@ -25,6 +27,7 @@ import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
 import ug.edu.ugmc.optimizer.datastructures.queues.CircularQueue;
 import ug.edu.ugmc.optimizer.graph.CustomGraph;
 import ug.edu.ugmc.optimizer.models.ServiceRequest;
+import ug.edu.ugmc.optimizer.models.ServiceRequest.Status;
 
 /**
  * Minimal application coordinator for examiner-facing use cases. Algorithms
@@ -33,7 +36,7 @@ import ug.edu.ugmc.optimizer.models.ServiceRequest;
  */
 public final class OptimizerApplicationService implements OptimizerService {
 
-    private static final int SORT_SAMPLE_LIMIT = 20;
+    private static final int SORT_SAMPLE_LIMIT = 10;
 
     private final OptimizerRepository repository;
     private final ExperimentGateway experimentGateway;
@@ -43,7 +46,9 @@ public final class OptimizerApplicationService implements OptimizerService {
     private CircularQueue<ServiceRequest> pendingQueue;
     private CustomPriorityQueue priorityQueue;
     private DynamicArray<ServiceRequest> requests;
+    private DynamicArray<ServiceRequest> pendingRequests;
     private CustomGraph graph;
+    private int requestCount;
     private boolean initialized;
 
     public OptimizerApplicationService(
@@ -62,42 +67,33 @@ public final class OptimizerApplicationService implements OptimizerService {
     @Override
     public InitializationResult initializeData() throws Exception {
         repository.initialize();
-        int requestCount = repository.countServiceRequests();
+        int loadedRequestCount = repository.countServiceRequests();
         int locationCount = repository.countLocations();
-        if (requestCount <= 0 || locationCount <= 0) {
+        if (loadedRequestCount <= 0 || locationCount <= 0) {
             throw new IllegalStateException(
                     "The database must contain service requests and graph locations.");
         }
 
-        CustomHashTable<String, ServiceRequest> loadedLookup = new CustomHashTable<>();
-        CircularQueue<ServiceRequest> loadedQueue = new CircularQueue<>(requestCount);
+        requestCount = loadedRequestCount;
+        reloadRequestState();
         CustomGraph loadedGraph = new CustomGraph(locationCount);
-        repository.loadServiceRequests(loadedLookup, loadedQueue);
         repository.loadGraph(loadedGraph);
-
-        if (loadedQueue.size() != requestCount || loadedGraph.getNumNodes() != locationCount) {
+        if (loadedGraph.getNumNodes() != locationCount) {
             throw new IllegalStateException("Database loader returned an incomplete data set.");
         }
-
-        DynamicArray<ServiceRequest> loadedRequests = new DynamicArray<>(requestCount);
-        CustomPriorityQueue loadedPriorityQueue = new CustomPriorityQueue();
-        for (int index = 0; index < requestCount; index++) {
-            ServiceRequest request = loadedQueue.dequeue();
-            loadedQueue.enqueue(request);
-            loadedRequests.insert(request);
-            // CustomPriorityQueue is a min-priority queue; negate urgency so 5
-            // is dispatched before 4, and so on.
-            loadedPriorityQueue.insert(request.getId(), -request.getUrgency());
-        }
-
-        requestLookup = loadedLookup;
-        pendingQueue = loadedQueue;
-        priorityQueue = loadedPriorityQueue;
-        requests = loadedRequests;
         graph = loadedGraph;
-        initialized = true;
 
-        return new InitializationResult(requestCount, loadedQueue.getCapacity(), locationCount);
+        int pendingCount = repository.countServiceRequestsByStatus(Status.PENDING);
+        int inProgressCount = repository.countServiceRequestsByStatus(Status.IN_PROGRESS);
+        int completedCount = repository.countServiceRequestsByStatus(Status.COMPLETED);
+        if (pendingCount + inProgressCount + completedCount != requestCount
+                || pendingQueue.size() != pendingCount) {
+            throw new IllegalStateException("Persistent request status counts are inconsistent.");
+        }
+        initialized = true;
+        return new InitializationResult(
+                requestCount, pendingCount, inProgressCount, completedCount,
+                pendingQueue.getCapacity(), locationCount);
     }
 
     @Override
@@ -106,7 +102,7 @@ public final class OptimizerApplicationService implements OptimizerService {
         if (requestId == null || requestId.trim().isEmpty()) {
             throw new IllegalArgumentException("Request ID cannot be blank.");
         }
-        return toView(requestLookup.get(requestId.trim()));
+        return toView(requestLookup.get(normalizeRequestId(requestId)));
     }
 
     @Override
@@ -117,7 +113,7 @@ public final class OptimizerApplicationService implements OptimizerService {
     }
 
     @Override
-    public RequestView dispatchNextPriority() {
+    public RequestView dispatchNextPriority() throws Exception {
         requireInitialized();
         String requestId;
         try {
@@ -125,9 +121,60 @@ public final class OptimizerApplicationService implements OptimizerService {
         } catch (IllegalStateException emptyQueue) {
             return null;
         }
-        RequestView dispatched = toView(requestLookup.get(requestId));
-        removeFromPendingQueue(requestId);
-        return dispatched;
+        boolean persisted = false;
+        try {
+            persisted = repository.updateRequestStatus(
+                    requestId, Status.PENDING, Status.IN_PROGRESS);
+            if (!persisted) {
+                throw new IllegalStateException(
+                        "Request is no longer pending and was not dispatched: " + requestId);
+            }
+            reloadRequestState();
+            return toView(requestLookup.get(requestId));
+        } catch (Exception exception) {
+            if (persisted) {
+                rollbackStatus(
+                        exception, requestId, Status.IN_PROGRESS, Status.PENDING);
+            }
+            restoreRequestState(exception);
+            throw exception;
+        }
+    }
+
+    @Override
+    public CompletionResult completeRequest(String requestId) throws Exception {
+        requireInitialized();
+        String normalizedId = normalizeRequestId(requestId);
+        ServiceRequest current = requestLookup.get(normalizedId);
+        if (current == null) {
+            return new CompletionResult(CompletionOutcome.NOT_FOUND, null);
+        }
+        if (current.getStatus() == Status.PENDING) {
+            return new CompletionResult(CompletionOutcome.MUST_DISPATCH_FIRST, toView(current));
+        }
+        if (current.getStatus() == Status.COMPLETED) {
+            return new CompletionResult(CompletionOutcome.ALREADY_COMPLETED, toView(current));
+        }
+
+        boolean persisted = false;
+        try {
+            persisted = repository.updateRequestStatus(
+                    normalizedId, Status.IN_PROGRESS, Status.COMPLETED);
+            if (!persisted) {
+                throw new IllegalStateException(
+                        "Request status changed before completion: " + normalizedId);
+            }
+            reloadRequestState();
+            return new CompletionResult(
+                    CompletionOutcome.COMPLETED, toView(requestLookup.get(normalizedId)));
+        } catch (Exception exception) {
+            if (persisted) {
+                rollbackStatus(
+                        exception, normalizedId, Status.COMPLETED, Status.IN_PROGRESS);
+            }
+            restoreRequestState(exception);
+            throw exception;
+        }
     }
 
     @Override
@@ -168,8 +215,17 @@ public final class OptimizerApplicationService implements OptimizerService {
         requireInitialized();
         requireMethod(method);
         DynamicArray<Integer> urgencies = new DynamicArray<>(requests.size());
+        int[] distribution = new int[5];
         for (int index = 0; index < requests.size(); index++) {
-            urgencies.insert(requests.get(index).getUrgency());
+            int urgency = requests.get(index).getUrgency();
+            urgencies.insert(urgency);
+            distribution[urgency - 1]++;
+        }
+
+        int sampleSize = Math.min(SORT_SAMPLE_LIMIT, urgencies.size());
+        int[] beforeSample = new int[sampleSize];
+        for (int index = 0; index < sampleSize; index++) {
+            beforeSample[index] = urgencies.get(index);
         }
 
         switch (method) {
@@ -180,12 +236,15 @@ public final class OptimizerApplicationService implements OptimizerService {
             default -> throw new IllegalArgumentException("Unsupported sort method: " + method);
         }
 
-        int sampleSize = Math.min(SORT_SAMPLE_LIMIT, urgencies.size());
-        int[] sample = new int[sampleSize];
+        int[] lowestSample = new int[sampleSize];
+        int[] highestSample = new int[sampleSize];
         for (int index = 0; index < sampleSize; index++) {
-            sample[index] = urgencies.get(index);
+            lowestSample[index] = urgencies.get(index);
+            highestSample[index] = urgencies.get(urgencies.size() - sampleSize + index);
         }
-        return new SortResult(method, urgencies.size(), sample);
+        return new SortResult(
+                method, urgencies.size(), beforeSample,
+                lowestSample, highestSample, distribution);
     }
 
     @Override
@@ -220,24 +279,32 @@ public final class OptimizerApplicationService implements OptimizerService {
             throw new IllegalArgumentException("Capacity cannot be negative.");
         }
 
-        int[] weights = new int[requests.size()];
-        int[] values = new int[requests.size()];
-        for (int index = 0; index < requests.size(); index++) {
-            ServiceRequest request = requests.get(index);
+        int[] weights = new int[pendingRequests.size()];
+        int[] values = new int[pendingRequests.size()];
+        for (int index = 0; index < pendingRequests.size(); index++) {
+            ServiceRequest request = pendingRequests.get(index);
             weights[index] = request.getWeight();
             values[index] = request.getValue();
         }
 
-        int greedyValue = GreedyOptimizer.greedyKnapsack(weights, values, capacity);
+        GreedyResult greedy = GreedyOptimizer.solveGreedyKnapsack(weights, values, capacity);
         DPOptimizer.KnapsackResult optimal =
                 DPOptimizer.solveKnapsack(weights, values, capacity);
+        int[] greedyIndices = greedy.getSelectedIndices();
+        String[] greedyIds = new String[greedyIndices.length];
+        for (int index = 0; index < greedyIndices.length; index++) {
+            greedyIds[index] = pendingRequests.get(greedyIndices[index]).getId();
+        }
         int[] selectedIndices = optimal.getSelectedIndices();
         String[] selectedIds = new String[selectedIndices.length];
         for (int index = 0; index < selectedIndices.length; index++) {
-            selectedIds[index] = requests.get(selectedIndices[index]).getId();
+            selectedIds[index] = pendingRequests.get(selectedIndices[index]).getId();
         }
         return new OptimizationResult(
-                greedyValue,
+                capacity,
+                greedy.getTotalValue(),
+                greedy.getTotalWeight(),
+                greedyIds,
                 optimal.getMaximumValue(),
                 optimal.getTotalWeight(),
                 selectedIds);
@@ -305,13 +372,56 @@ public final class OptimizerApplicationService implements OptimizerService {
         return numbers;
     }
 
-    private void removeFromPendingQueue(String requestId) {
-        int pendingCount = pendingQueue.size();
+    private void reloadRequestState() throws Exception {
+        CustomHashTable<String, ServiceRequest> loadedLookup = new CustomHashTable<>();
+        CircularQueue<ServiceRequest> loadedQueue = new CircularQueue<>(requestCount);
+        DynamicArray<ServiceRequest> loadedRequests = new DynamicArray<>(requestCount);
+        repository.loadServiceRequests(loadedLookup, loadedQueue, loadedRequests);
+        if (loadedLookup.getSize() != requestCount || loadedRequests.size() != requestCount) {
+            throw new IllegalStateException("Database loader returned incomplete request records.");
+        }
+
+        DynamicArray<ServiceRequest> loadedPending =
+                new DynamicArray<>(Math.max(1, loadedQueue.size()));
+        CustomPriorityQueue loadedPriorityQueue = new CustomPriorityQueue();
+        int pendingCount = loadedQueue.size();
         for (int index = 0; index < pendingCount; index++) {
-            ServiceRequest request = pendingQueue.dequeue();
-            if (!request.getId().equals(requestId)) {
-                pendingQueue.enqueue(request);
+            ServiceRequest request = loadedQueue.dequeue();
+            loadedQueue.enqueue(request);
+            loadedPending.insert(request);
+            // The custom queue is a min-heap; negating urgency dispatches 5 first.
+            loadedPriorityQueue.insert(request.getId(), -request.getUrgency());
+        }
+
+        requestLookup = loadedLookup;
+        pendingQueue = loadedQueue;
+        priorityQueue = loadedPriorityQueue;
+        requests = loadedRequests;
+        pendingRequests = loadedPending;
+    }
+
+    private void restoreRequestState(Exception originalFailure) {
+        try {
+            reloadRequestState();
+        } catch (Exception reloadFailure) {
+            originalFailure.addSuppressed(reloadFailure);
+        }
+    }
+
+    private void rollbackStatus(
+            Exception originalFailure,
+            String requestId,
+            Status currentStatus,
+            Status restoredStatus) {
+        try {
+            boolean rolledBack = repository.updateRequestStatus(
+                    requestId, currentStatus, restoredStatus);
+            if (!rolledBack) {
+                originalFailure.addSuppressed(new IllegalStateException(
+                        "Unable to roll back persistent status for " + requestId + "."));
             }
+        } catch (Exception rollbackFailure) {
+            originalFailure.addSuppressed(rollbackFailure);
         }
     }
 
@@ -329,7 +439,24 @@ public final class OptimizerApplicationService implements OptimizerService {
 
     private static RequestView toView(ServiceRequest request) {
         return request == null ? null : new RequestView(
-                request.getId(), request.getUrgency(), request.getWeight(), request.getValue());
+                request.getId(),
+                request.getPatientLabel(),
+                request.getCategory(),
+                request.getSourceLocation(),
+                request.getDestinationLocation(),
+                request.getUrgency(),
+                request.getStatus().databaseValue(),
+                request.getSubmitted(),
+                request.getDeadline(),
+                request.getWeight(),
+                request.getValue());
+    }
+
+    private static String normalizeRequestId(String requestId) {
+        if (requestId == null || requestId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Request ID cannot be blank.");
+        }
+        return requestId.trim().toUpperCase(Locale.ROOT);
     }
 
     private static int intAttribute(Element element, String attribute) {

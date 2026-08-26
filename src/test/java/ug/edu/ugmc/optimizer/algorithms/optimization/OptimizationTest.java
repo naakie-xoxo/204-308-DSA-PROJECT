@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 
 import ug.edu.ugmc.optimizer.algorithms.optimization.DPOptimizer.KnapsackResult;
+import ug.edu.ugmc.optimizer.algorithms.optimization.GreedyOptimizer.GreedyResult;
 
 /** Tests optimization independently from the unfinished graph traversals. */
 class OptimizationTest {
@@ -40,6 +41,20 @@ class OptimizationTest {
 
         assertEquals(160, GreedyOptimizer.greedyKnapsack(weights, values, 50));
         assertEquals(220, DPOptimizer.knapsack(weights, values, 50));
+    }
+
+    @Test
+    void detailedGreedyResultRetainsSelectionAndCapacityArithmetic() {
+        GreedyResult result = GreedyOptimizer.solveGreedyKnapsack(
+                new int[]{10, 20, 30}, new int[]{60, 100, 120}, 50);
+
+        assertEquals(160, result.getTotalValue());
+        assertEquals(30, result.getTotalWeight());
+        assertArrayEquals(new int[]{0, 1}, result.getSelectedIndices());
+
+        int[] callerCopy = result.getSelectedIndices();
+        callerCopy[0] = 2;
+        assertArrayEquals(new int[]{0, 1}, result.getSelectedIndices());
     }
 
     @Test
