@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS service_requests (
     value INTEGER NOT NULL,
     time_submitted TEXT NOT NULL,
     deadline TEXT NOT NULL,
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('Pending', 'In Progress', 'Completed')),
     CHECK (source_id <> destination_id),
     FOREIGN KEY (source_id) REFERENCES locations(location_id),
     FOREIGN KEY (destination_id) REFERENCES locations(location_id)

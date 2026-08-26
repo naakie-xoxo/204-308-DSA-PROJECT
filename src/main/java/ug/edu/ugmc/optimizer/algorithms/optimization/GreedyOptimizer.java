@@ -36,6 +36,15 @@ public final class GreedyOptimizer {
      * @return The sub-optimal total value achieved by the greedy heuristic
      */
     public static int greedyKnapsack(int[] weights, int[] values, int capacity) {
+        return solveGreedyKnapsack(weights, values, capacity).getTotalValue();
+    }
+
+    /**
+     * Executes the same descending value-to-weight heuristic while retaining
+     * the selected input indices for presentation and arithmetic validation.
+     */
+    public static GreedyResult solveGreedyKnapsack(
+            int[] weights, int[] values, int capacity) {
         if (weights == null || values == null) {
             throw new IllegalArgumentException("Weights and values cannot be null.");
         }
@@ -47,7 +56,7 @@ public final class GreedyOptimizer {
             throw new IllegalArgumentException("Capacity cannot be negative.");
         }
         if (weights.length == 0 || capacity == 0) {
-            return 0;
+            return new GreedyResult(0, 0, new int[0]);
         }
 
         for (int index = 0; index < weights.length; index++) {
@@ -89,6 +98,8 @@ public final class GreedyOptimizer {
         // Step 3: Iterate through the sorted ratios and pack the capacity
         int totalValue = 0;
         int currentWeight = 0;
+        int selectedCount = 0;
+        int[] selectionBuffer = new int[n];
 
         for (int i = 0; i < n; i++) {
             int itemIdx = indices[i];
@@ -97,10 +108,32 @@ public final class GreedyOptimizer {
             if (currentWeight + weights[itemIdx] <= capacity) {
                 currentWeight += weights[itemIdx];
                 totalValue += values[itemIdx];
+                selectionBuffer[selectedCount++] = itemIdx;
             }
         }
 
-        return totalValue;
+        int[] selectedIndices = new int[selectedCount];
+        for (int index = 0; index < selectedCount; index++) {
+            selectedIndices[index] = selectionBuffer[index];
+        }
+        return new GreedyResult(totalValue, currentWeight, selectedIndices);
+    }
+
+    /** Immutable detailed result for the existing Greedy 0/1 heuristic. */
+    public static final class GreedyResult {
+        private final int totalValue;
+        private final int totalWeight;
+        private final int[] selectedIndices;
+
+        private GreedyResult(int totalValue, int totalWeight, int[] selectedIndices) {
+            this.totalValue = totalValue;
+            this.totalWeight = totalWeight;
+            this.selectedIndices = copy(selectedIndices);
+        }
+
+        public int getTotalValue() { return totalValue; }
+        public int getTotalWeight() { return totalWeight; }
+        public int[] getSelectedIndices() { return copy(selectedIndices); }
     }
 
     /**

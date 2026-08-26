@@ -9,9 +9,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import ug.edu.ugmc.optimizer.datastructures.hashing.CustomHashTable;
+import ug.edu.ugmc.optimizer.datastructures.linear.DynamicArray;
 import ug.edu.ugmc.optimizer.datastructures.queues.CircularQueue;
 import ug.edu.ugmc.optimizer.graph.CustomGraph;
 import ug.edu.ugmc.optimizer.models.ServiceRequest;
+import ug.edu.ugmc.optimizer.models.ServiceRequest.Status;
 
 /**
  * Loads the persistent hospital data into the application's custom in-memory
@@ -26,8 +28,10 @@ public final class DatabaseLoader {
     private static final Logger LOGGER = Logger.getLogger(DatabaseLoader.class.getName());
 
     private static final String SERVICE_REQUESTS_SQL = """
-            SELECT request_id, urgency_level, weight, value
+            SELECT request_id, patient_name, source_id, destination_id, category,
+                   urgency_level, weight, value, time_submitted, deadline, status
             FROM service_requests
+            ORDER BY rowid
             """;
 
     private static final String LOCATIONS_SQL = """
@@ -59,8 +63,9 @@ public final class DatabaseLoader {
     }
 
     /**
-     * Loads every service request into both the lookup table and processing
-     * queue. This method can be called only once per loader instance.
+     * Loads every service request into the lookup table and queues only records
+     * whose persistent status is {@code Pending}. This method can be called
+     * only once per loader instance.
      *
      * @param map custom request lookup table keyed by request ID
      * @param queue custom queue used for request processing
@@ -71,6 +76,14 @@ public final class DatabaseLoader {
     public synchronized void loadServiceRequests(
             CustomHashTable<String, ServiceRequest> map,
             CircularQueue<ServiceRequest> queue) {
+        loadServiceRequests(map, queue, null);
+    }
+
+    /** Loads all records for lookup while queuing only pending work. */
+    public synchronized void loadServiceRequests(
+            CustomHashTable<String, ServiceRequest> map,
+            CircularQueue<ServiceRequest> queue,
+            DynamicArray<ServiceRequest> allRequests) {
         requireDestination(map, "map");
         requireDestination(queue, "queue");
         ensureNotAttempted(serviceRequestsLoadAttempted, "Service requests");
@@ -82,13 +95,25 @@ public final class DatabaseLoader {
 
             while (results.next()) {
                 String requestId = results.getString("request_id");
-                int urgency = results.getInt("urgency_level");
-                int weight = results.getInt("weight");
-                int value = results.getInt("value");
-
-                ServiceRequest request = new ServiceRequest(requestId, urgency, weight, value);
+                ServiceRequest request = new ServiceRequest(
+                        requestId,
+                        results.getString("patient_name"),
+                        results.getString("source_id"),
+                        results.getString("destination_id"),
+                        results.getString("category"),
+                        results.getInt("urgency_level"),
+                        results.getInt("weight"),
+                        results.getInt("value"),
+                        results.getString("time_submitted"),
+                        results.getString("deadline"),
+                        Status.fromDatabaseValue(results.getString("status")));
                 map.put(requestId, request);
-                queue.enqueue(request);
+                if (allRequests != null) {
+                    allRequests.insert(request);
+                }
+                if (request.getStatus() == Status.PENDING) {
+                    queue.enqueue(request);
+                }
             }
         } catch (SQLException exception) {
             LOGGER.log(Level.SEVERE, "Failed to load service requests from SQLite.", exception);

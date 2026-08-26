@@ -5,6 +5,8 @@ import java.io.PrintStream;
 import java.util.Scanner;
 
 import ug.edu.ugmc.optimizer.application.services.OptimizerService;
+import ug.edu.ugmc.optimizer.application.services.OptimizerService.CompletionOutcome;
+import ug.edu.ugmc.optimizer.application.services.OptimizerService.CompletionResult;
 import ug.edu.ugmc.optimizer.application.services.OptimizerService.InitializationResult;
 import ug.edu.ugmc.optimizer.application.services.OptimizerService.MstMethod;
 import ug.edu.ugmc.optimizer.application.services.OptimizerService.OptimizationResult;
@@ -29,7 +31,7 @@ public final class ConsoleUI {
     // (22271087 % 5) + 3
     private static final int MAX_INVALID_ATTEMPTS = (22271087 % 5) + 3;
     private static final int MIN_MENU_CHOICE = 0;
-    private static final int MAX_MENU_CHOICE = 12;
+    private static final int MAX_MENU_CHOICE = 13;
 
     private final OptimizerService service;
     private final Scanner scanner;
@@ -129,8 +131,7 @@ public final class ConsoleUI {
 
     private void dispatch(int choice) {
         switch (choice) {
-            case 1 -> runRepeatableFeature(
-                    "REQUEST ID LOOKUP", "look up another request", this::handleRequestLookup);
+            case 1 -> runRequestLookupFeature();
             case 2 -> runOneShotFeature(
                     "PENDING FIFO TRIAGE QUEUE", this::handlePendingQueueView);
             case 3 -> runRepeatableFeature(
@@ -138,7 +139,7 @@ public final class ConsoleUI {
             case 4 -> runRepeatableFeature(
                     "MINIMUM SPANNING TREE", "run another MST", this::handleMstCalculation);
             case 5 -> runOneShotFeature(
-                    "DATABASE INITIALIZATION", this::handleDatabaseInitialization);
+                    "DATABASE RELOAD", this::handleDatabaseInitialization);
             case 6 -> runOneShotFeature(
                     "PRIORITY DISPATCH", this::handlePriorityDispatch);
             case 7 -> runRepeatableFeature(
@@ -153,6 +154,7 @@ public final class ConsoleUI {
                     "LATEST MAVEN TEST SUMMARY", this::handleTestSummary);
             case 12 -> runOneShotFeature(
                     "PERFORMANCE EXPERIMENTS", this::handleExperiments);
+            case 13 -> runCompletionFeature();
             default -> throw new IllegalArgumentException("Unsupported menu choice: " + choice);
         }
     }
@@ -183,6 +185,76 @@ public final class ConsoleUI {
             output.println("Operation failed: " + safeMessage(exception));
         }
         waitForMainMenu();
+    }
+
+    private void runRequestLookupFeature() {
+        printFeatureHeading("REQUEST ID LOOKUP");
+        boolean firstPrompt = true;
+        while (true) {
+            output.print(firstPrompt
+                    ? "Enter request ID or B to return: "
+                    : "Enter another request ID or B to return: ");
+            String requestId = readLine();
+            if (requestId.equalsIgnoreCase("B")) {
+                output.println();
+                return;
+            }
+            if (requestId.isEmpty()) {
+                output.println("Request ID cannot be blank.");
+                firstPrompt = false;
+                continue;
+            }
+
+            RequestView result = service.findRequest(requestId);
+            if (result == null) {
+                output.println("No record found for ID: " + requestId);
+                output.println("Expected request-ID format is similar to REQ-001.");
+            } else {
+                printRequestDetails("Request found", result);
+            }
+            output.println();
+            firstPrompt = false;
+        }
+    }
+
+    private void runCompletionFeature() {
+        printFeatureHeading("COMPLETE REQUEST");
+        while (true) {
+            output.print("Enter in-progress request ID or B to return: ");
+            String requestId = readLine();
+            if (requestId.equalsIgnoreCase("B")) {
+                output.println();
+                return;
+            }
+            if (requestId.isEmpty()) {
+                output.println("Request ID cannot be blank.");
+                continue;
+            }
+
+            try {
+                CompletionResult result = service.completeRequest(requestId);
+                if (result.outcome() == CompletionOutcome.NOT_FOUND) {
+                    output.println("No record found for ID: " + requestId);
+                    continue;
+                }
+                if (result.outcome() == CompletionOutcome.MUST_DISPATCH_FIRST) {
+                    output.println("Request " + result.request().id()
+                            + " is Pending and must be dispatched first.");
+                    continue;
+                }
+                if (result.outcome() == CompletionOutcome.ALREADY_COMPLETED) {
+                    output.println("Request " + result.request().id() + " is already Completed.");
+                    continue;
+                }
+                output.println();
+                output.println("Request " + result.request().id() + " marked Completed.");
+                output.println("Status saved to SQLite.");
+                waitForMainMenu();
+                return;
+            } catch (Exception exception) {
+                output.println("Operation failed: " + safeMessage(exception));
+            }
+        }
     }
 
     private void printFeatureHeading(String heading) {
@@ -231,7 +303,7 @@ public final class ConsoleUI {
         output.println("2. View pending FIFO triage queue");
         output.println("3. Run graph traversal (BFS/DFS)");
         output.println("4. Show MST edges and cost (Prim/Kruskal)");
-        output.println("5. Initialize/reload database");
+        output.println("5. Reload persistent database state");
         output.println("6. Dispatch next priority request");
         output.println("7. Search request numbers (linear/binary)");
         output.println("8. Sort request urgency values");
@@ -239,27 +311,19 @@ public final class ConsoleUI {
         output.println("10. Compare greedy and DP allocation");
         output.println("11. Display latest Maven test summary");
         output.println("12. Run/export performance experiments");
+        output.println("13. Mark in-progress request completed");
         output.println("0. Exit");
         output.print("Choose an option: ");
     }
 
-    private void handleRequestLookup() {
-        String requestId = readToken("Enter request ID: ");
-        RequestView result = service.findRequest(requestId);
-        if (result == null) {
-            output.println("No record found for ID: " + requestId);
-        } else {
-            printRequest("Record found", result);
-        }
-    }
-
     private void handlePendingQueueView() {
         QueueView queue = service.viewPendingQueue();
-        output.println("Queue size: " + queue.size() + " / " + queue.capacity());
+        output.println("Pending requests: " + queue.size() + " / " + queue.capacity());
         if (queue.nextRequest() == null) {
-            output.println("Triage queue is empty.");
+            output.println("Pending FIFO triage queue is empty.");
         } else {
-            printRequest("Next FIFO request", queue.nextRequest());
+            printRequestDetails("Next request by FIFO arrival order", queue.nextRequest());
+            output.println("FIFO means arrival-order processing, not highest urgency.");
         }
     }
 
@@ -307,18 +371,23 @@ public final class ConsoleUI {
 
     private void handleDatabaseInitialization() throws Exception {
         InitializationResult result = service.initializeData();
-        output.println("Database and in-memory structures ready.");
-        output.println("Loaded requests: " + result.requestCount());
-        output.println("Triage queue capacity: " + result.queueCapacity());
-        output.println("Loaded locations: " + result.locationCount());
+        output.println("Persistent database state reloaded successfully.");
+        output.println();
+        printField("Total requests:", result.requestCount());
+        printField("Pending:", result.pendingCount());
+        printField("In Progress:", result.inProgressCount());
+        printField("Completed:", result.completedCount());
+        printField("Pending FIFO entries:", result.pendingCount());
+        printField("Loaded locations:", result.locationCount());
     }
 
-    private void handlePriorityDispatch() {
+    private void handlePriorityDispatch() throws Exception {
         RequestView request = service.dispatchNextPriority();
         if (request == null) {
-            output.println("Priority queue is empty.");
+            output.println("No Pending request is available for priority dispatch.");
         } else {
-            printRequest("Priority dispatch", request);
+            printRequestDetails("Highest-priority pending request dispatched", request);
+            output.println("Status saved to SQLite.");
         }
     }
 
@@ -365,10 +434,24 @@ public final class ConsoleUI {
         }
 
         SortResult result = service.sortUrgencies(method);
-        int[] sample = result.sample();
-        output.println(result.method() + " sorted " + result.totalCount()
-                + " urgency values. First " + sample.length + ":");
-        printIntegers(sample);
+        output.println("Algorithm: " + result.method());
+        output.println("Requests sorted: " + result.totalCount());
+        output.println("Order: ascending (1 = lowest urgency, 5 = highest)");
+        output.println();
+        output.println("Before sample:");
+        printIntegers(result.beforeSample());
+        output.println();
+        output.println("Urgency distribution:");
+        int[] distribution = result.distribution();
+        for (int urgency = 1; urgency <= distribution.length; urgency++) {
+            output.println(urgency + ": " + distribution[urgency - 1]);
+        }
+        output.println();
+        output.println("Lowest " + result.lowestSample().length + " after sort:");
+        printIntegers(result.lowestSample());
+        output.println();
+        output.println("Highest " + result.highestSample().length + " after sort:");
+        printIntegers(result.highestSample());
     }
 
     private void handleShortestPath() {
@@ -390,11 +473,31 @@ public final class ConsoleUI {
             return;
         }
         OptimizationResult result = service.optimizeRequests(capacity);
-        output.println("Greedy value: " + result.greedyValue());
-        output.println("DP optimal value: " + result.optimalValue());
-        output.println("DP selected weight: " + result.selectedWeight());
-        output.print("DP selected requests: ");
+        output.println("Resource capacity: " + result.capacity());
+        output.println("Scores are unitless modelling values.");
+        output.println();
+        output.println("GREEDY");
+        output.print("Selected requests: ");
+        printSequence(result.greedySelectedRequestIds(), ", ");
+        output.println("Resource used:      " + result.greedyWeight()
+                + " / " + result.capacity());
+        output.println("Remaining capacity: " + result.greedyRemainingCapacity());
+        output.println("Total benefit:      " + result.greedyValue());
+        output.println();
+        output.println("DYNAMIC PROGRAMMING");
+        output.print("Selected requests: ");
         printSequence(result.selectedRequestIds(), ", ");
+        output.println("Resource used:      " + result.selectedWeight()
+                + " / " + result.capacity());
+        output.println("Remaining capacity: " + result.optimalRemainingCapacity());
+        output.println("Total benefit:      " + result.optimalValue());
+        output.println();
+        output.println("DP improvement over Greedy: +"
+                + (result.optimalValue() - result.greedyValue()) + " benefit points");
+        output.println();
+        output.println("Note:");
+        output.println("This feature selects a set of Pending requests under limited resources.");
+        output.println("It does not determine dispatch order.");
     }
 
     private void handleTestSummary() {
@@ -443,11 +546,28 @@ public final class ConsoleUI {
         return scanner.nextLine().trim();
     }
 
-    private void printRequest(String label, RequestView request) {
-        output.println(label + " - ID: " + request.id()
-                + ", Urgency: " + request.urgency()
-                + ", Weight: " + request.weight()
-                + ", Value: " + request.value());
+    private void printRequestDetails(String label, RequestView request) {
+        output.println(label + ":");
+        output.println("----------------------------------------");
+        printField("Request ID:", request.id());
+        printField("Patient label (synthetic):", request.patientLabel());
+        printField("Category:", request.category());
+        printField("Source location:", request.sourceLocation());
+        printField("Destination location:", request.destinationLocation());
+        printField("Urgency level:", request.urgency());
+        printField("Status:", request.status());
+        printField("Submitted:", request.submitted());
+        printField("Deadline:", request.deadline());
+        printField("Resource cost score:", request.weight());
+        printField("Optimisation benefit score:", request.value());
+        output.println("----------------------------------------");
+    }
+
+    private void printField(String label, Object value) {
+        String text = value == null || value.toString().isBlank()
+                ? "(not recorded)"
+                : value.toString();
+        output.printf("  %-29s %s%n", label, text);
     }
 
     private void printSequence(String[] values, String separator) {
